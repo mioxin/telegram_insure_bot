@@ -1,8 +1,12 @@
 package commands
 
 import (
+	"log"
+
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
+
+var registered_commands = map[string]func(c *Commander, mes *tgapi.Message){}
 
 type Service interface {
 	Calculate(data any) (string, error)
@@ -27,16 +31,20 @@ func (cmder *Commander) Run() error {
 		if update.Message == nil {
 			continue
 		}
-		// If we got a message
-		switch update.Message.Command() {
-		case "help":
-			cmder.help(update.Message)
-		case "about":
-			cmder.about(update.Message)
-		case "calc":
-			cmder.calc(update.Message)
-		default:
-		}
+		cmder.HandlerCommand(update)
 	}
 	return nil
+}
+
+func (cmder *Commander) HandlerCommand(update tgapi.Update) {
+	defer func() {
+		if panicVal := recover(); panicVal != nil {
+			log.Printf("recover panic %v:", panicVal)
+		}
+	}()
+	// If we got a message
+	if command, ok := registered_commands[update.Message.Command()]; ok {
+		command(cmder, update.Message)
+	}
+
 }

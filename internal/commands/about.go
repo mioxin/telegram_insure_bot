@@ -14,3 +14,7 @@ func (c *Commander) about(input_message *tgapi.Message) {
 	msg := tgapi.NewMessage(input_message.Chat.ID, ABOUT)
 	c.bot.Send(msg)
 }
+
+func init() {
+	registered_commands["about"] = (*Commander).calc
+}
