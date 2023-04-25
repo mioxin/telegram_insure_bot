@@ -23,7 +23,8 @@ func init() {
 }
 
 func parsConf() {
-	conf, err := config.NewConfig("bot.cfg")
+	var err error
+	conf, err = config.NewConfig("bot.cfg")
 	if err != nil {
 		log.Panic("error reading config file:", err)
 	}
@@ -51,7 +52,7 @@ func main() {
 
 	bot, err := tgapi.NewBotAPI(conf.Token)
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 
 	bot.Debug = true
