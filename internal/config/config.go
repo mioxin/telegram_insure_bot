@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Token string
+	Token   string
+	LogFile string
 }
 
 func NewConfig(config_file string) (*Config, error) {
-	var token string
+	var token, logFile string
 	conf, err := os.ReadFile(config_file)
 	if err != nil {
 		return nil, err
@@ -33,8 +34,10 @@ func NewConfig(config_file string) (*Config, error) {
 		switch arr_str[0] {
 		case "secure_token":
 			token = arr_str[1]
+		case "log-file":
+			logFile = arr_str[1]
 		default:
 		}
 	}
-	return &Config{Token: token}, nil
+	return &Config{Token: token, LogFile: logFile}, nil
 }
