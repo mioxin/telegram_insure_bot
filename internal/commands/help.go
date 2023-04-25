@@ -25,5 +25,5 @@ func (c *Commander) help(input_message *tgapi.Message) {
 }
 
 func init() {
-	registered_commands["help"] = (*Commander).calc
+	registered_commands["help"] = (*Commander).help
 }
