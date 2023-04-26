@@ -3,15 +3,16 @@ package services
 import "fmt"
 
 type Insurance struct {
-	Name  string
-	Price float64
+	Name                                string
+	Total_work, Vid, Workers1, Workers2 int
+	Gfot1, Gfot2                        float64
 }
 
 func NewInsurence(name string, price float64) *Insurance {
-	return &Insurance{name, price}
+	return &Insurance{Name: name, Workers1: -1, Gfot1: -1}
 }
 
-func (ins *Insurance) Calculate(data any) (string, error) {
-	var sum string = fmt.Sprintf("%.2f тенге", ins.Price)
+func (ins *Insurance) Calculate() (string, error) {
+	var sum string = fmt.Sprintf("%.2f тенге", 0)
 	return sum, nil
 }
