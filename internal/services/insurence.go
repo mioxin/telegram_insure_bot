@@ -13,6 +13,6 @@ func NewInsurence(name string, price float64) *Insurance {
 }
 
 func (ins *Insurance) Calculate() (string, error) {
-	var sum string = fmt.Sprintf("%.2f тенге", 0)
+	var sum string = fmt.Sprintf("%.2f тенге", 10.0)
 	return sum, nil
 }

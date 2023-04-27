@@ -31,7 +31,7 @@ func (c *Commander) calc(input_message *tgapi.Message) {
 	reqer := requestdata.NewRequester(c.bot, input_message.Chat.ID, insure)
 
 	if err := reqer.Run(); err != nil {
-		log.Println("calc: error run requester %v", err)
+		log.Printf("calc: error run requester %v", err)
 	}
 
 	if sum, err := (*reqer).Product_service.Calculate(); err != nil {
