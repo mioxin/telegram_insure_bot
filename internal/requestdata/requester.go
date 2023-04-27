@@ -4,12 +4,9 @@ import (
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-const WRONG_INPUT string = `Введите команду или выберите ёё из меню.
-`
-
 type reguest struct {
 	text   string
-	worker func(c *Requester, mes *tgapi.Message) (any, error)
+	worker func(c *Requester, mes *tgapi.Message)
 }
 
 var requests_list = make([]reguest, 0)
