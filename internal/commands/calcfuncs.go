@@ -101,7 +101,7 @@ func (r *Commander) str2pair(mes *tgapi.Message) (int, float64) {
 			continue
 		}
 		fot, err = strconv.ParseFloat(str_arr[1], 64)
-		if err == nil {
+		if err != nil {
 			log.Println("Commander: error in get_workers ", err)
 			r.bot.Send(tgapi.NewMessage(mes.Chat.ID, WRONG_INPUT))
 			continue
