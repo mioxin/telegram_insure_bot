@@ -40,7 +40,10 @@ func (cmder *Commander) Run() error {
 	u := tgapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, _ := cmder.bot.GetUpdatesChan(u)
+	updates, err := cmder.bot.GetUpdatesChan(u)
+	if err != nil {
+		return err
+	}
 	time.Sleep(time.Millisecond * 500)
 	updates.Clear()
 
@@ -61,7 +64,7 @@ func (cmder *Commander) Run() error {
 func (cmder *Commander) HandlerCommand(update tgapi.Update) {
 	defer func() {
 		if panicVal := recover(); panicVal != nil {
-			log.Printf("recover panic %v:", panicVal)
+			log.Printf("recover panic in HandlerCommand %v:", panicVal)
 		}
 	}()
 	// If we got a message
@@ -77,7 +80,7 @@ func (cmder *Commander) HandlerCommand(update tgapi.Update) {
 func (cmder *Commander) HandlerRequest(update tgapi.Update) {
 	defer func() {
 		if panicVal := recover(); panicVal != nil {
-			log.Printf("recover panic %v:", panicVal)
+			log.Printf("recover panic in HandlerRequest%v:", panicVal)
 		}
 	}()
 
@@ -87,4 +90,9 @@ func (cmder *Commander) HandlerRequest(update tgapi.Update) {
 
 	requests_list[idx].worker(cmder, update.Message)
 	*cmder.idx_request++
+}
+
+func (cmder *Commander) resetCommander() {
+	*cmder.handler = ""
+	*cmder.idx_request = 0
 }

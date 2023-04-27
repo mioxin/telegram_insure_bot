@@ -13,6 +13,10 @@ func NewInsurence(name string, price float64) *Insurance {
 }
 
 func (ins *Insurance) Calculate() (string, error) {
-	var sum string = fmt.Sprintf("%.2f тенге", 10.0)
-	return sum, nil
+	sum := 10.0
+	bonus := 1.5
+
+	//TODO calculate sum
+	var str string = fmt.Sprintf("Сумма страховки: %.2f тенге\nВаша скидка: %.2f тенге", sum, bonus)
+	return str, nil
 }
