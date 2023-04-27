@@ -16,11 +16,12 @@ const SEND string = `Вложите сканы документов содерж
 
 На основании этих документов менеджер расчитает вам страховку с учетом скидки или кешбэка.`
 
-func (c *Commander) send(input_message *tgapi.Message) {
+func (c *Commander) send(input_message *tgapi.Message) string {
 	log.Printf("send: [%s] %s", input_message.From.UserName, input_message.Text)
 
 	msg := tgapi.NewMessage(input_message.Chat.ID, SEND)
 	c.bot.Send(msg)
+	return "send"
 }
 
 func init() {

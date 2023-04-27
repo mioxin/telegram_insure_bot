@@ -9,7 +9,7 @@ type Insurance struct {
 }
 
 func NewInsurence(name string, price float64) *Insurance {
-	return &Insurance{Name: name, Workers1: -1, Gfot1: -1}
+	return &Insurance{Name: name}
 }
 
 func (ins *Insurance) Calculate() (string, error) {

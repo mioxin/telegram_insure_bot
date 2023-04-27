@@ -17,11 +17,12 @@ const HELP string = `Уважаемый предприниматель!
 Для прямой сязи с менеджером номер +7(701)172-67-88 (Whatsapp)
 `
 
-func (c *Commander) help(input_message *tgapi.Message) {
+func (c *Commander) help(input_message *tgapi.Message) string {
 	log.Printf("help: [%s] %s", input_message.From.UserName, input_message.Text)
 
 	msg := tgapi.NewMessage(input_message.Chat.ID, HELP)
 	c.bot.Send(msg)
+	return ""
 }
 
 func init() {
