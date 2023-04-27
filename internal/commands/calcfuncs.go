@@ -23,8 +23,8 @@ const (
 ГФОТ работников с окладом >10 МЗП: %v
 Работники с ежемесячым окладом <=10 МЗП: %v
 ГФОТ работников с окладом <=10 МЗП: %v
-Сумма страховки: %v
-Ваша скидка: %v
+----------------
+%v
 `
 	WRONG_TXT string = `Произошла ошибка при расчете. Проверьте введённые данные.`
 )
@@ -33,7 +33,7 @@ func init() {
 	requests_list = append(requests_list, reguest{TXT_VID, (*Commander).get_total_work})
 	requests_list = append(requests_list, reguest{TXT_WORKER1, (*Commander).get_vid})
 	requests_list = append(requests_list, reguest{TXT_WORKER2, (*Commander).get_workers1})
-	requests_list = append(requests_list, reguest{TXT_TOTAL, (*Commander).get_workers2})
+	requests_list = append(requests_list, reguest{"", (*Commander).get_workers2})
 }
 
 func (r *Commander) get_total_work(mes *tgapi.Message) {
@@ -49,9 +49,7 @@ func (r *Commander) get_workers1(mes *tgapi.Message) {
 }
 
 func (r *Commander) get_workers2(mes *tgapi.Message) {
-	defer func() {
-		*r.handler = ""
-	}()
+	defer r.resetCommander()
 
 	r.Product_service.(*services.Insurance).Workers2, r.Product_service.(*services.Insurance).Gfot2 = r.str2pair(mes)
 	sum, err := (*r).Product_service.Calculate()
@@ -66,7 +64,7 @@ func (r *Commander) get_workers2(mes *tgapi.Message) {
 		(*r).Product_service.(*services.Insurance).Gfot1,
 		(*r).Product_service.(*services.Insurance).Workers2,
 		(*r).Product_service.(*services.Insurance).Gfot2,
-		sum, 0)
+		sum)
 	msg := tgapi.NewMessage(mes.Chat.ID, str)
 	r.bot.Send(msg)
 
