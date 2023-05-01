@@ -17,6 +17,6 @@ func (ins *Insurance) Calculate() (string, error) {
 	bonus := 1.5
 
 	//TODO calculate sum
-	var str string = fmt.Sprintf("Сумма страховки: %.2f тенге\nВаша скидка: %.2f тенге", sum, bonus)
+	var str string = fmt.Sprintf("Сумма страховки: *%.2f тенге*\nВаша скидка: *%.2f тенге*", sum, bonus)
 	return str, nil
 }

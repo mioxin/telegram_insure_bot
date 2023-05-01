@@ -8,16 +8,15 @@ import (
 
 const (
 	TXT string = `Расчет страховой суммы, страховой премии.
-	
-Введите общее количество работников с учетом работников филиалов (одно число).`
+	`
 )
 
 func (c *Commander) calc(input_message *tgapi.Message) string {
 	log.Printf("calc: [%s] %s", input_message.From.UserName, input_message.Text)
 
-	msg := tgapi.NewMessage(input_message.Chat.ID, TXT)
+	msg := tgapi.NewMessage(input_message.Chat.ID, TXT+TXT_TOTAL)
 	c.bot.Send(msg)
-
+	//requests_list[c.Idx].worker(c, input_message)
 	return "calc"
 }
 

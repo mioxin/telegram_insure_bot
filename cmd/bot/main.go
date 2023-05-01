@@ -9,11 +9,13 @@ import (
 	"github.com/mrmioxin/gak_telegram_bot/internal/commands"
 	"github.com/mrmioxin/gak_telegram_bot/internal/config"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
+	"github.com/mrmioxin/gak_telegram_bot/internal/session"
 )
 
 var (
 	verbouse bool
 	conf     *config.Config
+	Sessions map[int64]session.Session
 )
 
 func init() {
@@ -59,6 +61,7 @@ func main() {
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	insure := services.NewInsurence("ОСНС", 1000.00)
+	Sessions = make(map[int64]session.Session)
 
 	c := commands.NewCommander(bot, insure)
 	if err := (*c).Run(); err != nil {
