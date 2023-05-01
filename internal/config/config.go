@@ -35,11 +35,11 @@ func NewConfig(config_file string) (*Config, error) {
 		if len(arr_str) < 2 || arr_str[0][:2] == "//" || arr_str[0][:1] == "#" {
 			continue
 		}
-		switch arr_str[0] {
+		switch strings.TrimSpace(arr_str[0]) {
 		case "secure_token":
-			token = arr_str[1]
+			token = strings.TrimSpace(arr_str[1])
 		case "log-file":
-			logFile = arr_str[1]
+			logFile = strings.TrimSpace(arr_str[1])
 		case "deny":
 			deny[arr_str[1]] = struct{}{}
 		case "allow":

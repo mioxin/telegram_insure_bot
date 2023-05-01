@@ -4,7 +4,6 @@ import (
 	"log"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/mrmioxin/gak_telegram_bot/internal/session"
 )
 
 const START string = `Уважаемый предприниматель!
@@ -20,7 +19,6 @@ const START string = `Уважаемый предприниматель!
 
 func (c *Commander) start(input_message *tgapi.Message) string {
 	log.Printf("start: [%s] %s", input_message.From.UserName, input_message.Text)
-	c.Sessions[input_message.Chat.ID] = *session.NewSession(input_message.From.UserName)
 
 	msg := tgapi.NewMessage(input_message.Chat.ID, START)
 	c.bot.Send(msg)
