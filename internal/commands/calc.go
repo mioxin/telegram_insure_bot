@@ -8,7 +8,7 @@ import (
 
 const (
 	TXT string = `Расчет страховой суммы, страховой премии.
-	`
+`
 )
 
 func (c *Commander) calc(input_message *tgapi.Message) string {
