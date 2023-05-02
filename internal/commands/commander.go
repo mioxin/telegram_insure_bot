@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -11,8 +12,9 @@ const WRONG_INPUT string = `Введите команду или выберит�
 `
 
 type reguest struct {
-	text   string
-	worker func(c *Commander, mes *tgapi.Message)
+	ok_text    string
+	wrong_text string
+	worker     func(c *Commander, mes *tgapi.Message) error
 }
 
 var BackKeyboard = tgapi.NewReplyKeyboard(
@@ -31,13 +33,12 @@ type Service interface {
 type Commander struct {
 	bot             *tgapi.BotAPI
 	Product_service Service
-	ErrorInput      bool
 	Idx             int
 	Handler         string
 }
 
 func NewCommander(bot *tgapi.BotAPI, serv Service) *Commander {
-	return &Commander{bot, serv, false, 0, ""}
+	return &Commander{bot, serv, 0, ""}
 }
 
 func (cmder *Commander) Run() error {
@@ -104,12 +105,27 @@ func (cmder *Commander) HandlerRequest(update tgapi.Update) {
 	// }
 	// ses.LastTime = time.Now()
 	// idx := cmder.getSessionIdx(update.Message.Chat.ID)
-	if !cmder.ErrorInput {
-		msg := tgapi.NewMessage(update.Message.Chat.ID, requests_list[cmder.Idx].text)
-		msg.ReplyMarkup = BackKeyboard
-		cmder.bot.Send(msg)
+	// if !cmder.ErrorInput {
+	// 	msg := tgapi.NewMessage(update.Message.Chat.ID, requests_list[cmder.Idx].text)
+	// 	msg.ReplyMarkup = BackKeyboard
+	// 	cmder.bot.Send(msg)
+	// }
+	strIdx := fmt.Sprintf(" (Idx=%d)", cmder.Idx)
+	err := requests_list[cmder.Idx].worker(cmder, update.Message)
+	fmt.Println(err, strIdx, requests_list[cmder.Idx])
+
+	if err != nil {
+		log.Printf("error: Idx=%v %v", cmder.Idx, err)
+		cmder.bot.Send(tgapi.NewMessage(update.Message.Chat.ID, requests_list[cmder.Idx].wrong_text+strIdx))
+	} else {
+		mes := tgapi.NewMessage(update.Message.Chat.ID, requests_list[cmder.Idx].ok_text+strIdx)
+		mes.ParseMode = "Markdown"
+		cmder.bot.Send(mes)
+		cmder.Idx++
+		if cmder.Idx >= len(requests_list) {
+			cmder.ResetSession()
+		}
 	}
-	requests_list[cmder.Idx].worker(cmder, update.Message)
 }
 
 func (cmder *Commander) ResetSession() {
