@@ -2,11 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
+	"github.com/mrmioxin/gak_telegram_bot/internal/sessions"
 )
 
 const (
@@ -80,7 +82,12 @@ func (r *Commander) get_workers2(mes *tgapi.Message) error {
 
 	err = finishCalculate(r, mes)
 	if err != nil {
-		requests_list[r.Idx].wrong_text = WRONG_CALC
+		ses, err := r.Sessions.GetSession(mes.Chat.ID)
+		if err != nil {
+			err = r.Sessions.UpdateSession(mes.Chat.ID, sessions.NewSession(mes.Chat.UserName))
+			log.Println("error getWorkers2 calc:", err)
+		}
+		requests_list[ses.IdxRequest].wrong_text = WRONG_CALC
 		return err
 	}
 	return nil
@@ -99,7 +106,15 @@ func finishCalculate(r *Commander, mes *tgapi.Message) error {
 		(*r).Product_service.(*services.Insurance).Workers2,
 		(*r).Product_service.(*services.Insurance).Gfot2,
 		sum)
-	requests_list[r.Idx].ok_text = str
+
+	ses, err := r.Sessions.GetSession(mes.Chat.ID)
+	if err != nil {
+		err = r.Sessions.UpdateSession(mes.Chat.ID, sessions.NewSession(mes.Chat.UserName))
+		log.Println("error finishCalculate calc:", err)
+
+	}
+
+	requests_list[ses.IdxRequest].ok_text = str
 	// msg := tgapi.NewMessage(mes.Chat.ID, str)
 	//msg.ReplyMarkup = tgapi.NewRemoveKeyboard(true)
 	// msg.ParseMode = "Markdown"
