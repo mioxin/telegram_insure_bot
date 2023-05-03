@@ -18,11 +18,6 @@ type reguest struct {
 	worker     func(c *Commander, mes *tgapi.Message) error
 }
 
-// var BackKeyboard = tgapi.NewReplyKeyboard(
-// 	tgapi.NewKeyboardButtonRow(
-// 		tgapi.NewKeyboardButton("<<< Назад"),
-// 	))
-
 var requests_list = make([]reguest, 0)
 
 var registered_commands = map[string]func(c *Commander, mes *tgapi.Message) string{}
@@ -33,6 +28,7 @@ type Service interface {
 type SessionsI interface {
 	GetSession(id int64) (*sessions.Session, error)
 	UpdateSession(id int64, ses *sessions.Session) error
+	AddSession(id int64, ses *sessions.Session)
 }
 type Commander struct {
 	bot             *tgapi.BotAPI
@@ -89,9 +85,12 @@ func (cmder *Commander) HandlerCommand(update tgapi.Update) {
 	if command, ok := registered_commands[update.Message.Command()]; ok {
 		ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID)
 		if err != nil {
-			cmder.Sessions.UpdateSession(update.Message.Chat.ID, sessions.NewSession(update.Message.Chat.UserName))
+			ses = sessions.NewSession(update.Message.Chat.UserName)
+			cmder.Sessions.AddSession(update.Message.Chat.ID, ses)
 		}
 		ses.ActionName = command(cmder, update.Message)
+		cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
+		log.Println(ses)
 	} else {
 		msg := tgapi.NewMessage(update.Message.Chat.ID, WRONG_INPUT)
 		cmder.bot.Send(msg)
@@ -107,7 +106,8 @@ func (cmder *Commander) HandlerRequest(update tgapi.Update) {
 	}()
 	ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID)
 	if err != nil {
-		cmder.Sessions.UpdateSession(update.Message.Chat.ID, sessions.NewSession(update.Message.Chat.UserName))
+		ses = sessions.NewSession(update.Message.Chat.UserName)
+		cmder.Sessions.AddSession(update.Message.Chat.ID, ses)
 	}
 
 	strIdx := fmt.Sprintf(" (Idx=%d)", ses.IdxRequest)

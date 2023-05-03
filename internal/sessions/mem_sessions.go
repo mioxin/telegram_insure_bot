@@ -22,7 +22,11 @@ func (mses MemSessions) UpdateSession(id int64, ses *Session) error {
 	if _, ok := mses[id]; !ok {
 		err = fmt.Errorf("error in updateSession: session id=%v not found. created new session", id)
 	}
-	(mses)[id] = *ses
+	mses[id] = *ses
 	return err
 
+}
+
+func (mses MemSessions) AddSession(id int64, ses *Session) {
+	mses[id] = *ses
 }

@@ -61,14 +61,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if debug {
-		bot.Debug = false
-	}
+	bot.Debug = debug
+
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	insure := services.NewInsurence("ОСНС", 1000.00)
 	ses := make(map[int64]sessions.Session)
+
 	c := commands.NewCommander(bot, insure, sessions.MemSessions(ses))
+
 	if err := (*c).Run(); err != nil {
 		log.Panic(err)
 	}
