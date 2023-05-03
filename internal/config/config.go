@@ -3,6 +3,7 @@ package config
 import (
 	"bufio"
 	"io"
+	"log"
 	"os"
 	"strings"
 )
@@ -46,6 +47,7 @@ func NewConfig(config_file string) (*Config, error) {
 			allow[arr_str[1]] = struct{}{}
 
 		default:
+			log.Println("config: unrecognized param in the line: ", str)
 		}
 	}
 	return &Config{Token: token, LogFile: logFile, Deny: deny, Allow: allow}, nil

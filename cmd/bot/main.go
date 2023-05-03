@@ -9,20 +9,22 @@ import (
 	"github.com/mrmioxin/gak_telegram_bot/internal/commands"
 	"github.com/mrmioxin/gak_telegram_bot/internal/config"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
-	"github.com/mrmioxin/gak_telegram_bot/internal/session"
+	"github.com/mrmioxin/gak_telegram_bot/internal/sessions"
 )
 
 var (
 	verbouse bool
 	debug    bool
 	conf     *config.Config
-	Sessions map[int64]session.Session
 )
 
 func init() {
 	flag.BoolVar(&verbouse, "v", false, "Output fool log to StdOut (shorthand)")
 	flag.BoolVar(&verbouse, "verbouse", false, "Output fool log to StdOut")
 	flag.BoolVar(&debug, "d", false, "Output debug info to StdOut (shorthand)")
+	// registers.Sessions = *sessions.NewMemSessions()
+	// registers.RegisteredCommands = make(map[string]func(mes *tgapi.Message) string)
+	// registers.RegisteredActions = make(map[string]actions.Action)
 
 }
 
@@ -65,9 +67,8 @@ func main() {
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	insure := services.NewInsurence("ОСНС", 1000.00)
-	Sessions = make(map[int64]session.Session)
-
-	c := commands.NewCommander(bot, insure)
+	ses := make(map[int64]sessions.Session)
+	c := commands.NewCommander(bot, insure, sessions.MemSessions(ses))
 	if err := (*c).Run(); err != nil {
 		log.Panic(err)
 	}
