@@ -10,6 +10,7 @@ import (
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/commands"
 	"github.com/mrmioxin/gak_telegram_bot/internal/config"
+	"github.com/mrmioxin/gak_telegram_bot/internal/httpclient"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
 	"github.com/mrmioxin/gak_telegram_bot/internal/sessions"
 )
@@ -39,13 +40,6 @@ func parsConf() {
 	if conf, err = config.NewConfig(strings.NewReader(string(configFile))); err != nil {
 		log.Panic(err)
 	}
-	if conf.Token == "" {
-		log.Panic("error config file: secure token expected")
-	}
-
-	if conf.LogFile == "" {
-		conf.LogFile = "bot.log"
-	}
 	if !verbouse {
 		output_log, err := os.OpenFile(conf.LogFile, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
@@ -61,7 +55,7 @@ func main() {
 
 	parsConf()
 
-	bot, err := tgapi.NewBotAPI(conf.Token)
+	bot, err := tgapi.NewBotAPIWithClient(conf.Token, httpclient.NewHTTPClient())
 	if err != nil {
 		log.Fatal(">>>", conf.Token, ">>> ", err)
 	}
