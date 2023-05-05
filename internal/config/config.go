@@ -36,6 +36,9 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 		switch strings.TrimSpace(arr_str[0]) {
 		case "secure_token":
 			token = strings.TrimSpace(arr_str[1])
+			if token == "" {
+				return nil, fmt.Errorf("error NewConfig: in the config file secure token expected")
+			}
 		case "log-file":
 			logFile = strings.TrimSpace(arr_str[1])
 		case "deny":
@@ -55,6 +58,10 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 			log.Println("config: unrecognized param in the line: ", str)
 		}
 	}
+	if logFile == "" {
+		logFile = "bot.log"
+	}
+
 	return &Config{Token: token, LogFile: logFile, Deny: deny, Allow: allow, AccWord: acc_word}, nil
 }
 
