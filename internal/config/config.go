@@ -2,6 +2,7 @@ package config
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"strings"
@@ -28,7 +29,7 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		arr_str := strings.Split(strings.ToLower(strings.TrimSpace(str)), " ")
+		arr_str := strings.Split(strings.ToLower(strings.TrimSpace(str)), "=")
 		if len(arr_str) < 2 || arr_str[0][:2] == "//" || arr_str[0][:1] == "#" {
 			continue
 		}
@@ -60,19 +61,23 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 func (conf *Config) IsAccess(user string) bool {
 	user = strings.ToLower(user)
 	res := false
-	if _, ok := conf.Allow["all"]; ok && len(conf.Deny) == 0 {
-		return ok
-	} else {
-		res = true
+	_, okall := conf.Allow["all"]
+	_, noall := conf.Deny["all"]
+	if okall && len(conf.Deny) == 0 {
+		return okall
 	}
 
-	if _, ok := conf.Deny["all"]; ok {
-		res = false
+	if noall && okall {
+		return false
 	}
-	_, res = conf.Allow[user]
+
+	if _, ok := conf.Allow[user]; ok || okall {
+		res = true
+	}
 	if _, ok := conf.Deny[user]; ok {
 		res = !ok
 	}
+	fmt.Println("3 ", res, conf.Deny, user, conf.Deny[user])
 
 	return res
 }
