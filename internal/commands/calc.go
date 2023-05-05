@@ -21,5 +21,5 @@ func (c *Commander) calc(input_message *tgapi.Message) string {
 }
 
 func init() {
-	registered_commands["calc"] = (*Commander).calc
+	registered_commands["calc"] = RegisteredCommand{Description: "Расчет страховки ОСНС.", Worker: (*Commander).calc, ShowInHelp: true}
 }

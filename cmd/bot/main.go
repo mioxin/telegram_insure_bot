@@ -4,6 +4,8 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/commands"
@@ -30,9 +32,12 @@ func init() {
 
 func parsConf() {
 	var err error
-	conf, err = config.NewConfig("bot.cfg")
+	configFile, err := os.ReadFile("bot.cfg")
 	if err != nil {
 		log.Panic("error reading config file:", err)
+	}
+	if conf, err = config.NewConfig(strings.NewReader(string(configFile))); err != nil {
+		log.Panic(err)
 	}
 	if conf.Token == "" {
 		log.Panic("error config file: secure token expected")
@@ -58,7 +63,7 @@ func main() {
 
 	bot, err := tgapi.NewBotAPI(conf.Token)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(">>>", conf.Token, ">>> ", err)
 	}
 
 	bot.Debug = debug
@@ -68,9 +73,18 @@ func main() {
 	insure := services.NewInsurence("ОСНС", 1000.00)
 	ses := make(map[int64]sessions.Session)
 
-	c := commands.NewCommander(bot, insure, sessions.MemSessions(ses))
+	c := commands.NewCommander(bot, conf, insure, sessions.MemSessions(ses))
+	u := tgapi.NewUpdate(0)
+	u.Timeout = 60
 
-	if err := (*c).Run(); err != nil {
-		log.Panic(err)
+	updates, err := bot.GetUpdatesChan(u)
+	if err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(time.Millisecond * 500)
+	updates.Clear()
+
+	for update := range updates {
+		c.HandlerMain(update)
 	}
 }

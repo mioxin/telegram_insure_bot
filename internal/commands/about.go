@@ -17,5 +17,5 @@ func (c *Commander) about(input_message *tgapi.Message) string {
 }
 
 func init() {
-	registered_commands["about"] = (*Commander).about
+	registered_commands["about"] = RegisteredCommand{Description: "Коротко о боте.", Worker: (*Commander).about, ShowInHelp: true}
 }

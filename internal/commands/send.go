@@ -25,5 +25,5 @@ func (c *Commander) send(input_message *tgapi.Message) string {
 }
 
 func init() {
-	registered_commands["send"] = (*Commander).send
+	registered_commands["send"] = RegisteredCommand{Description: "Отправка информации для расчета страховки менеджером.", Worker: (*Commander).send, ShowInHelp: true}
 }

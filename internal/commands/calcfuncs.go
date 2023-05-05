@@ -36,10 +36,10 @@ _ГФОТ работников с окладом <=10 МЗП:_ *%v*
 )
 
 func init() {
-	requests_list = append(requests_list, reguest{TXT_VID, WRONG_1DIGIT, (*Commander).get_total_work})
-	requests_list = append(requests_list, reguest{TXT_WORKER1, WRONG_5SIGN, (*Commander).get_vid})
-	requests_list = append(requests_list, reguest{TXT_WORKER2, WRONG_2DIGIT, (*Commander).get_workers1})
-	requests_list = append(requests_list, reguest{"", WRONG_2DIGIT, (*Commander).get_workers2})
+	requestsListCalc = append(requestsListCalc, reguest{TXT_VID, WRONG_1DIGIT, (*Commander).get_total_work})
+	requestsListCalc = append(requestsListCalc, reguest{TXT_WORKER1, WRONG_5SIGN, (*Commander).get_vid})
+	requestsListCalc = append(requestsListCalc, reguest{TXT_WORKER2, WRONG_2DIGIT, (*Commander).get_workers1})
+	requestsListCalc = append(requestsListCalc, reguest{"", WRONG_2DIGIT, (*Commander).get_workers2})
 }
 
 func (r *Commander) get_total_work(mes *tgapi.Message) error {
@@ -87,7 +87,7 @@ func (r *Commander) get_workers2(mes *tgapi.Message) error {
 			err = r.Sessions.UpdateSession(mes.Chat.ID, sessions.NewSession(mes.Chat.UserName))
 			log.Println("error getWorkers2 calc:", err)
 		}
-		requests_list[ses.IdxRequest].wrong_text = WRONG_CALC
+		requestsListCalc[ses.IdxRequest].wrong_text = WRONG_CALC
 		return err
 	}
 	return nil
@@ -114,7 +114,7 @@ func finishCalculate(r *Commander, mes *tgapi.Message) error {
 
 	}
 
-	requests_list[ses.IdxRequest].ok_text = str
+	requestsListCalc[ses.IdxRequest].ok_text = str
 	// msg := tgapi.NewMessage(mes.Chat.ID, str)
 	//msg.ReplyMarkup = tgapi.NewRemoveKeyboard(true)
 	// msg.ParseMode = "Markdown"
