@@ -84,7 +84,5 @@ func (conf *Config) IsAccess(user string) bool {
 	if _, ok := conf.Deny[user]; ok {
 		res = !ok
 	}
-	fmt.Println("3 ", res, conf.Deny, user, conf.Deny[user])
-
 	return res
 }
