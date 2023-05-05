@@ -26,5 +26,5 @@ func (c *Commander) start(input_message *tgapi.Message) string {
 }
 
 func init() {
-	registered_commands["start"] = (*Commander).start
+	registered_commands["start"] = RegisteredCommand{Description: "Первоначальная информация при подключении к боту.", Worker: (*Commander).start, ShowInHelp: true}
 }
