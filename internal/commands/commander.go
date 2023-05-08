@@ -91,11 +91,11 @@ func (cmder *Commander) HandlerCommand(update tgapi.Update) {
 		if len(ses.AccessCommand) == 0 {
 			msg := tgapi.NewMessage(update.Message.Chat.ID, WRONG_ACCESS)
 			cmder.bot.Send(msg)
+		} else {
+			ses.ActionName = command.Worker(cmder, update.Message)
+			cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
+			//log.Println(ses)
 		}
-		ses.ActionName = command.Worker(cmder, update.Message)
-		cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
-		log.Println(ses)
-	} else {
 	}
 
 }

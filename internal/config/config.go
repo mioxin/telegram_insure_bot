@@ -29,7 +29,7 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		arr_str := strings.Split(strings.ToLower(strings.TrimSpace(str)), "=")
+		arr_str := strings.Split(strings.TrimSpace(str), "=")
 		if len(arr_str) < 2 || arr_str[0][:2] == "//" || arr_str[0][:1] == "#" {
 			continue
 		}
@@ -42,12 +42,12 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 		case "log-file":
 			logFile = strings.TrimSpace(arr_str[1])
 		case "deny":
-			arr_deny := strings.Split(arr_str[1], ",")
+			arr_deny := strings.Split(strings.ToLower(arr_str[1]), ",")
 			for _, d := range arr_deny {
 				deny[strings.TrimSpace(d)] = struct{}{}
 			}
 		case "allow":
-			arr_allow := strings.Split(arr_str[1], ",")
+			arr_allow := strings.Split(strings.ToLower(arr_str[1]), ",")
 			for _, d := range arr_allow {
 				allow[strings.TrimSpace(d)] = struct{}{}
 			}
@@ -68,6 +68,9 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 func (conf *Config) IsAccess(user string) bool {
 	user = strings.ToLower(user)
 	res := false
+	if len(conf.Allow) == 0 && len(conf.Deny) == 0 {
+		return true
+	}
 	_, okall := conf.Allow["all"]
 	_, noall := conf.Deny["all"]
 	if okall && len(conf.Deny) == 0 {

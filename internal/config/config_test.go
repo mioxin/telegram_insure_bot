@@ -22,6 +22,7 @@ var tests = []test{
 	{"deny =all\n", "user", false},
 	{"allow =user\n", "user", true},
 	{"allow =all\n", "user", true},
+	{"", "user", true},
 }
 
 func Test_isAccess(t *testing.T) {
