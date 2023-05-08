@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 func NewHTTPClient() *http.Client {
@@ -14,7 +13,7 @@ func NewHTTPClient() *http.Client {
 		return http.Header{"User-Agent": []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"}}, nil
 	}
 	cl := http.Client{
-		Timeout:   time.Duration(10) * time.Second,
+		//Timeout:   time.Duration(10) * time.Second,
 		Transport: transport,
 	}
 	return &cl
