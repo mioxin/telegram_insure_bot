@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -13,6 +12,11 @@ import (
 	"github.com/mrmioxin/gak_telegram_bot/internal/httpclient"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
 	"github.com/mrmioxin/gak_telegram_bot/internal/sessions"
+)
+
+const (
+	CONFIG_FILE_NAME      string        = "bot.cfg"
+	DURATION_WATCH_CONFIG time.Duration = 3 * time.Second
 )
 
 var (
@@ -33,13 +37,13 @@ func init() {
 
 func parsConf() {
 	var err error
-	configFile, err := os.ReadFile("bot.cfg")
-	if err != nil {
-		log.Panic("error reading config file:", err)
-	}
-	if conf, err = config.NewConfig(strings.NewReader(string(configFile))); err != nil {
+
+	flag.Parse()
+
+	if conf, err = config.NewConfig(CONFIG_FILE_NAME); err != nil {
 		log.Panic(err)
 	}
+
 	if !verbouse {
 		output_log, err := os.OpenFile(conf.LogFile, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
@@ -51,34 +55,37 @@ func parsConf() {
 }
 
 func main() {
-	flag.Parse()
 
 	parsConf()
 
 	bot, err := tgapi.NewBotAPIWithClient(conf.Token, httpclient.NewHTTPClient())
 	if err != nil {
-		log.Fatal(">>>", conf.Token, ">>> ", err)
+		log.Fatal("<<<", conf.Token, ">>> ", err)
 	}
 
 	bot.Debug = debug
-
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	insure := services.NewInsurence("ОСНС", 1000.00)
-	ses := make(map[int64]sessions.Session)
+	isModifyConfig := make(chan any)
+	go conf.Watch(CONFIG_FILE_NAME, DURATION_WATCH_CONFIG, isModifyConfig)
 
-	c := commands.NewCommander(bot, conf, insure, sessions.MemSessions(ses))
+	insure := services.NewInsurence("ОСНС", 1000.00)
+	//srvs := make(map[string]sessions.Services)
+
+	c := commands.NewCommander(bot, conf, insure, sessions.NewMemSessions())
+	//go c.WatchConfig(isModifyConfig)
+
 	u := tgapi.NewUpdate(0)
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(">>> ", err)
 	}
 	time.Sleep(time.Millisecond * 500)
 	updates.Clear()
 
 	for update := range updates {
-		c.HandlerMain(update)
+		go c.HandlerMain(update)
 	}
 }

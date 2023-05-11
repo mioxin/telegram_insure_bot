@@ -2,6 +2,8 @@ package services
 
 import (
 	"fmt"
+	"log"
+	"time"
 )
 
 type Insurance struct {
@@ -19,8 +21,8 @@ func (ins *Insurance) Calculate() (string, error) {
 	bonus := 1.5
 
 	//TODO calculate sum
-	// log.Println("Calculate 5 sec ...")
-	// time.Sleep(5 * time.Second)
+	log.Println("Calculate 5 sec ...")
+	time.Sleep(5 * time.Second)
 	var str string = fmt.Sprintf("Сумма страховки: *%.2f тенге*\nВаша скидка: *%.2f тенге*", sum, bonus)
 	return str, nil
 }

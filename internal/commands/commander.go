@@ -27,7 +27,7 @@ var requestsListCalc = make([]reguest, 0)
 
 var registered_commands = map[string]RegisteredCommand{}
 
-type Service interface {
+type IService interface {
 	Calculate() (string, error)
 }
 
@@ -36,17 +36,18 @@ type IConfig interface {
 }
 type ISessions interface {
 	GetSession(id int64) (*sessions.Session, error)
+	GetIdsByUser(user string) []int64
 	UpdateSession(id int64, ses *sessions.Session) error
 	AddSession(id int64, ses *sessions.Session)
 }
 type Commander struct {
 	bot             *tgapi.BotAPI
 	Config          IConfig
-	Product_service Service
+	Product_service IService
 	Sessions        ISessions
 }
 
-func NewCommander(bot *tgapi.BotAPI, conf IConfig, serv Service, ses ISessions) *Commander {
+func NewCommander(bot *tgapi.BotAPI, conf IConfig, serv IService, ses ISessions) *Commander {
 	return &Commander{bot, conf, serv, ses}
 }
 
@@ -85,16 +86,21 @@ func (cmder *Commander) HandlerCommand(update tgapi.Update) {
 			ses = sessions.NewSession(update.Message.Chat.UserName)
 			if cmder.Config.IsAccess(update.Message.Chat.UserName) {
 				ses.AccessCommand["all"] = struct{}{}
+			} else {
+				ses.AccessCommand["about"] = struct{}{}
 			}
 			cmder.Sessions.AddSession(update.Message.Chat.ID, ses)
 		}
-		if len(ses.AccessCommand) == 0 {
-			msg := tgapi.NewMessage(update.Message.Chat.ID, WRONG_ACCESS)
-			cmder.bot.Send(msg)
-		} else {
+		_, okAll := ses.AccessCommand["all"]
+		_, okCmd := ses.AccessCommand[update.Message.Command()]
+		if okAll || okCmd {
 			ses.ActionName = command.Worker(cmder, update.Message)
 			cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
 			//log.Println(ses)
+		} else {
+			msg := tgapi.NewMessage(update.Message.Chat.ID, WRONG_ACCESS)
+			cmder.bot.Send(msg)
+			log.Printf("HandlerCommand: deny acces fo @%s on /%s", update.Message.Chat.UserName, update.Message.Command())
 		}
 	}
 
@@ -125,3 +131,9 @@ func (cmder *Commander) HandlerRequest(update tgapi.Update) {
 		cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
 	}
 }
+
+// func (cmder *Commander) WatchConfig(isModify chan any) {
+// 	for range isModify {
+
+// 	}
+// }
