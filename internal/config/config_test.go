@@ -27,7 +27,7 @@ var tests = []test{
 
 func Test_isAccess(t *testing.T) {
 	for _, tst := range tests {
-		if cfg, err := NewConfig(strings.NewReader(tst.conf)); err != nil {
+		if cfg, err := ParseConfigFile(strings.NewReader(tst.conf)); err != nil {
 			t.Error(err)
 		} else {
 			t.Run(tst.conf, func(t *testing.T) {
@@ -38,3 +38,7 @@ func Test_isAccess(t *testing.T) {
 		}
 	}
 }
+
+// func Test_st1(t *testing.T) {
+// 	st()
+// }

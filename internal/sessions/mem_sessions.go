@@ -2,14 +2,14 @@ package sessions
 
 import "fmt"
 
-type MemSessions map[int64]Session
+type memSessions map[int64]Session
 
-func NewMemSessions() *MemSessions {
-	s := MemSessions(make(map[int64]Session))
+func NewMemSessions() *memSessions {
+	s := memSessions(make(map[int64]Session))
 	return &s
 }
 
-func (mses MemSessions) GetSession(id int64) (*Session, error) {
+func (mses memSessions) GetSession(id int64) (*Session, error) {
 	if ses, ok := (mses)[id]; ok {
 		return &ses, nil
 	} else {
@@ -17,7 +17,7 @@ func (mses MemSessions) GetSession(id int64) (*Session, error) {
 	}
 }
 
-func (mses MemSessions) UpdateSession(id int64, ses *Session) error {
+func (mses memSessions) UpdateSession(id int64, ses *Session) error {
 	var err error
 	if _, ok := mses[id]; !ok {
 		err = fmt.Errorf("error in updateSession: session id=%v not found. created new session", id)
@@ -27,6 +27,16 @@ func (mses MemSessions) UpdateSession(id int64, ses *Session) error {
 
 }
 
-func (mses MemSessions) AddSession(id int64, ses *Session) {
+func (mses memSessions) AddSession(id int64, ses *Session) {
 	mses[id] = *ses
+}
+
+func (mses memSessions) GetIdsByUser(user string) []int64 {
+	aId := make([]int64, 0)
+	for k, v := range mses {
+		if v.UserName == user {
+			aId = append(aId, k)
+		}
+	}
+	return aId
 }

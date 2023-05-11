@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -14,9 +16,30 @@ type Config struct {
 	AccWord string
 	Deny    map[string]struct{}
 	Allow   map[string]struct{}
+	ModTime time.Time
 }
 
-func NewConfig(config_file io.Reader) (*Config, error) {
+func NewConfig(configName string) (*Config, error) {
+	configFile, err := os.ReadFile(configName)
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := ParseConfigFile(strings.NewReader(string(configFile)))
+	if err != nil {
+		return nil, err
+	}
+
+	if flInfo, err := os.Stat(configName); err != nil {
+		return nil, err
+	} else {
+		config.ModTime = flInfo.ModTime()
+	}
+
+	return config, err
+}
+
+func ParseConfigFile(config_file io.Reader) (*Config, error) {
 	var token, logFile, acc_word string
 	deny := make(map[string]struct{})
 	allow := make(map[string]struct{})
@@ -37,7 +60,7 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 		case "secure_token":
 			token = strings.TrimSpace(arr_str[1])
 			if token == "" {
-				return nil, fmt.Errorf("error NewConfig: in the config file secure token expected")
+				return nil, fmt.Errorf("error ParseConfigFile: in the config file secure token expected")
 			}
 		case "log-file":
 			logFile = strings.TrimSpace(arr_str[1])
@@ -55,7 +78,7 @@ func NewConfig(config_file io.Reader) (*Config, error) {
 			acc_word = strings.TrimSpace(arr_str[1])
 
 		default:
-			log.Println("config: unrecognized param in the line: ", str)
+			log.Println("ParseConfigFile: unrecognized param in the line: ", str)
 		}
 	}
 	if logFile == "" {
@@ -88,4 +111,25 @@ func (conf *Config) IsAccess(user string) bool {
 		res = !ok
 	}
 	return res
+}
+
+func (conf *Config) Watch(configFile string, watchTime time.Duration, ok chan any) {
+	var isModify bool
+	for {
+		if flInfo, err := os.Stat(configFile); err != nil {
+			log.Printf("error in conf.Watch: error get FileInfo for  %v.", configFile)
+
+			time.Sleep(watchTime)
+			continue
+		} else {
+			isModify = flInfo.ModTime() != conf.ModTime
+		}
+
+		if isModify {
+			conf, _ = NewConfig(configFile)
+			log.Printf("Config file %v was modify. Config is updated.", configFile)
+			ok <- []string{}
+		}
+		time.Sleep(watchTime)
+	}
 }
