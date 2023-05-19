@@ -9,10 +9,11 @@ import (
 type Insurance struct {
 	Name                                string
 	Total_work, Vid, Workers1, Workers2 int
-	Gfot1, Gfot2                        float64
+	Gfot, Gfot1, Gfot2                  float64
+	EventInLast5Year                    bool
 }
 
-func NewInsurence(name string, price float64) *Insurance {
+func NewInsurence(name string) *Insurance {
 	return &Insurance{Name: name}
 }
 

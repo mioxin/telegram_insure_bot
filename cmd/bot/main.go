@@ -22,6 +22,7 @@ const (
 var (
 	verbouse bool
 	debug    bool
+	token    string
 	conf     *config.Config
 )
 
@@ -29,6 +30,7 @@ func init() {
 	flag.BoolVar(&verbouse, "v", false, "Output fool log to StdOut (shorthand)")
 	flag.BoolVar(&verbouse, "verbouse", false, "Output fool log to StdOut")
 	flag.BoolVar(&debug, "d", false, "Output debug info to StdOut (shorthand)")
+	flag.StringVar(&token, "t", "", "The security token for connecting to Telegram API")
 	// registers.Sessions = *sessions.NewMemSessions()
 	// registers.RegisteredCommands = make(map[string]func(mes *tgapi.Message) string)
 	// registers.RegisteredActions = make(map[string]actions.Action)
@@ -37,11 +39,14 @@ func init() {
 
 func parsConf() {
 	var err error
-
 	flag.Parse()
 
 	if conf, err = config.NewConfig(CONFIG_FILE_NAME); err != nil {
 		log.Panic(err)
+	}
+
+	if token != "" {
+		conf.Token = token
 	}
 
 	if !verbouse {
@@ -51,7 +56,6 @@ func parsConf() {
 		}
 		log.SetOutput(output_log)
 	}
-
 }
 
 func main() {
@@ -69,7 +73,7 @@ func main() {
 	isModifyConfig := make(chan any)
 	go conf.Watch(CONFIG_FILE_NAME, DURATION_WATCH_CONFIG, isModifyConfig)
 
-	insure := services.NewInsurence("ОСНС", 1000.00)
+	insure := services.NewInsurence("ОСНС")
 	//srvs := make(map[string]sessions.Services)
 
 	c := commands.NewCommander(bot, conf, insure, sessions.NewMemSessions())
