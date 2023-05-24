@@ -7,10 +7,10 @@ import (
 )
 
 type Insurance struct {
-	Name                                string
-	Total_work, Vid, Workers1, Workers2 int
-	Gfot, Gfot1, Gfot2                  float64
-	EventInLast5Year                    bool
+	Name, VidDescr, BinIin, Vid string
+	Total_work                  int
+	Gfot                        float64
+	EventInLast5Year            bool
 }
 
 func NewInsurence(name string) *Insurance {
@@ -18,12 +18,12 @@ func NewInsurence(name string) *Insurance {
 }
 
 func (ins *Insurance) Calculate() (string, error) {
-	sum := 10.0
-	bonus := 1.5
+	sum := 70000.0
+	bonus := 23000.0
 
 	//TODO calculate sum
 	log.Println("Calculate 5 sec ...")
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 	var str string = fmt.Sprintf("Сумма страховки: *%.2f тенге*\nВаша скидка: *%.2f тенге*", sum, bonus)
 	return str, nil
 }

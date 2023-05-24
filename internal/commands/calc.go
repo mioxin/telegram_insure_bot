@@ -11,13 +11,13 @@ const (
 `
 )
 
-func (c *Commander) calc(input_message *tgapi.Message) string {
+func (c *Commander) calc(input_message *tgapi.Message) (string, int) {
 	log.Printf("calc: [%s] %s", input_message.From.UserName, input_message.Text)
 
-	msg := tgapi.NewMessage(input_message.Chat.ID, TXT+TXT_VID)
-	c.bot.Send(msg)
+	msg := tgapi.NewMessage(input_message.Chat.ID, TXT+TXT_BIN)
+	m, _ := c.bot.Send(msg)
 	//requests_list[c.Idx].worker(c, input_message)
-	return "calc"
+	return "calc", m.MessageID
 }
 
 func init() {

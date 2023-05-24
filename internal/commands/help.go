@@ -10,7 +10,7 @@ import (
 const HELP string = `Команды Вы можете набрать с помощью клавиатуры или выбрать в меню.
 `
 
-func (c *Commander) help(input_message *tgapi.Message) string {
+func (c *Commander) help(input_message *tgapi.Message) (string, int) {
 	log.Printf("help: [%s] %s", input_message.From.UserName, input_message.Text)
 	str := ""
 	for key, cmnd := range registered_commands {
@@ -19,8 +19,8 @@ func (c *Commander) help(input_message *tgapi.Message) string {
 		}
 	}
 	msg := tgapi.NewMessage(input_message.Chat.ID, str+HELP)
-	c.bot.Send(msg)
-	return ""
+	m, _ := c.bot.Send(msg)
+	return "", m.MessageID
 }
 
 func init() {

@@ -1,15 +1,21 @@
 package commands
 
 import (
+	"fmt"
 	"log"
+	"strings"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mrmioxin/gak_telegram_bot/internal/services"
 	"github.com/mrmioxin/gak_telegram_bot/internal/sessions"
 )
 
 const (
-	WRONG_INPUT  string = `Введите команду или выберите ёё из меню.`
+	WRONG_AGAIN  string = `Опять ошибка. `
+	WRONG_INPUT  string = `Введите команду или выберите её из меню.`
 	WRONG_ACCESS string = "Извините, пока доступ закрыт."
+	YES          string = "Да"
+	NO           string = "Нет"
 )
 
 type reguest struct {
@@ -19,13 +25,23 @@ type reguest struct {
 }
 type RegisteredCommand struct {
 	Description string
-	Worker      func(c *Commander, mes *tgapi.Message) string
+	Worker      func(c *Commander, mes *tgapi.Message) (string, int)
 	ShowInHelp  bool
 }
 
-var requestsListCalc = make([]reguest, 0)
+var (
+	requestsListCalc    = make([]reguest, 0)
+	registered_commands = map[string]RegisteredCommand{}
+	yesNoKeyboardCalc   = tgapi.NewInlineKeyboardMarkup(
+		tgapi.NewInlineKeyboardRow(
+			tgapi.NewInlineKeyboardButtonData(YES, "calc yes"),
+			tgapi.NewInlineKeyboardButtonData(NO, "calc no"),
+		))
+)
 
-var registered_commands = map[string]RegisteredCommand{}
+type ITypeOfBusiness interface {
+	Get(vid string) (string, error)
+}
 
 type IService interface {
 	Calculate() (string, error)
@@ -45,10 +61,11 @@ type Commander struct {
 	Config          IConfig
 	Product_service IService
 	Sessions        ISessions
+	TypeOfBuseness  ITypeOfBusiness
 }
 
-func NewCommander(bot *tgapi.BotAPI, conf IConfig, serv IService, ses ISessions) *Commander {
-	return &Commander{bot, conf, serv, ses}
+func NewCommander(bot *tgapi.BotAPI, conf IConfig, serv IService, ses ISessions, tob ITypeOfBusiness) *Commander {
+	return &Commander{bot, conf, serv, ses, tob}
 }
 
 func (cmder *Commander) HandlerMain(update tgapi.Update) error {
@@ -73,7 +90,7 @@ func (cmder *Commander) HandlerMain(update tgapi.Update) error {
 		}
 		switch ses.ActionName {
 		case "calc":
-			cmder.HandlerRequest(update)
+			cmder.HandlerCalc(update, ses)
 		default:
 		}
 	}
@@ -96,7 +113,7 @@ func (cmder *Commander) HandlerCommand(update tgapi.Update) {
 		_, okAll := ses.AccessCommand["all"]
 		_, okCmd := ses.AccessCommand[update.Message.Command()]
 		if okAll || okCmd {
-			ses.ActionName = command.Worker(cmder, update.Message)
+			ses.ActionName, ses.LastMessageID = command.Worker(cmder, update.Message)
 			cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
 			//log.Println(ses)
 		} else {
@@ -105,30 +122,86 @@ func (cmder *Commander) HandlerCommand(update tgapi.Update) {
 			log.Printf("HandlerCommand: deny acces fo @%s on /%s", update.Message.Chat.UserName, update.Message.Command())
 		}
 	}
-
 }
 
-func (cmder *Commander) HandlerRequest(update tgapi.Update) {
-	ses, _ := cmder.Sessions.GetSession(update.Message.Chat.ID)
+func (cmder *Commander) HandlerCalc(update tgapi.Update, ses *sessions.Session) {
 	err := requestsListCalc[ses.IdxRequest].worker(cmder, update.Message)
-
+	var m tgapi.Message
 	if err != nil {
-		log.Printf("error: Idx=%v %v", ses.IdxRequest, err)
-		cmder.bot.Send(tgapi.NewMessage(update.Message.Chat.ID, requestsListCalc[ses.IdxRequest].wrong_text))
+		if err, ok := err.(ErrorBinIinNotFound); ok {
+			log.Printf("HandlerCalc: idx=%v. %v\n", ses.IdxRequest, err)
+			mes := tgapi.NewMessage(update.Message.Chat.ID, TXT_VID)
+			m, _ = cmder.bot.Send(mes)
+			ses.IdxRequest++
+			ses.LastMessageID = m.MessageID
+			cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
+			return
+		}
+		log.Printf("error HandlerCalc: Idx=%v %v", ses.IdxRequest, err)
+		if ses.LastRequestIsError {
+			m, _ = cmder.bot.Send(tgapi.NewEditMessageText(update.Message.Chat.ID, ses.LastMessageID, WRONG_AGAIN+requestsListCalc[ses.IdxRequest].wrong_text))
+		} else {
+			m, _ = cmder.bot.Send(tgapi.NewMessage(update.Message.Chat.ID, requestsListCalc[ses.IdxRequest].wrong_text))
+		}
+		ses.LastRequestIsError = true
 	} else {
+		log.Println("HandlerCalc: idx=", ses.IdxRequest)
 		mes := tgapi.NewMessage(update.Message.Chat.ID, requestsListCalc[ses.IdxRequest].ok_text)
 		mes.ParseMode = "Markdown"
-		cmder.bot.Send(mes)
-
-		ses.IdxRequest++
-		if ses.IdxRequest >= len(requestsListCalc) {
-			ses.ResetSession()
+		switch ses.IdxRequest {
+		case 0: //skip VID it gotten from the internet by the BIN/IIN
+			ses.IdxRequest++
+		case 1:
+			editText := fmt.Sprintf("Основной вид экономической деятельности: %s - %s\n",
+				cmder.Product_service.(*services.Insurance).Vid, cmder.Product_service.(*services.Insurance).VidDescr)
+			m, _ = cmder.bot.Send(tgapi.NewEditMessageText(update.Message.Chat.ID, ses.LastMessageID, editText))
+		case 3: //need send the inline button Yes|No
+			mes.ReplyMarkup = yesNoKeyboardCalc
+		default:
 		}
-		cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
+		m, _ = cmder.bot.Send(mes)
+		ses.IdxRequest++
 	}
+	ses.LastMessageID = m.MessageID
+	if ses.IdxRequest >= len(requestsListCalc) {
+		ses.ResetSession()
+	}
+	cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
 }
 
 func (cmder *Commander) HandlerCallback(update tgapi.Update) {
+	// log.Println("HandlerCallback: >>>>>>>>>>")
+	// ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID)
+	// log.Println("HandlerCallback: start :", ses, err)
+
+	callbackData := strings.Split(update.CallbackQuery.Data, " ")
+	editText := ""
+	switch callbackData[0] {
+	case "calc":
+		log.Println("HandlerCallback: start calc:", callbackData[1])
+		if callbackData[1] == "yes" {
+			editText = TXT_LAST5YEAR + " *" + YES + "*\n\n"
+		} else {
+			editText = TXT_LAST5YEAR + " *" + NO + "*\n\n"
+		}
+		mes := tgapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, editText)
+		mes.ParseMode = "Markdown"
+		cmder.bot.Send(mes)
+		//cmder.Get_yes_no(callbackData[1])
+
+		if txt, err := cmder.Get_yes_no(callbackData[1]); err != nil {
+			log.Println("error HandlerCallback: err calc:", WRONG_CALC, err)
+			editText = txt + WRONG_CALC
+		} else {
+			editText = txt
+		}
+		mes1 := tgapi.NewMessage(update.CallbackQuery.Message.Chat.ID, editText)
+		mes1.ParseMode = "Markdown"
+		cmder.bot.Send(mes1)
+		//ses.ResetSession()
+
+	default:
+	}
 
 }
 

@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	CONFIG_FILE_NAME      string        = "bot.cfg"
-	DURATION_WATCH_CONFIG time.Duration = 3 * time.Second
+	TYPE_OF_BUSNS_FILENAME string        = "vid.txt"
+	CONFIG_FILE_NAME       string        = "bot.cfg"
+	DURATION_WATCH_CONFIG  time.Duration = 3 * time.Second
 )
 
 var (
@@ -62,6 +63,11 @@ func main() {
 
 	parsConf()
 
+	tob, err := services.NewFileTypeOfBusns(TYPE_OF_BUSNS_FILENAME)
+	if err != nil {
+		log.Fatal("<<<", TYPE_OF_BUSNS_FILENAME, ">>> ", err)
+	}
+
 	bot, err := tgapi.NewBotAPIWithClient(conf.Token, httpclient.NewHTTPClient())
 	if err != nil {
 		log.Fatal("<<<", conf.Token, ">>> ", err)
@@ -76,7 +82,7 @@ func main() {
 	insure := services.NewInsurence("ОСНС")
 	//srvs := make(map[string]sessions.Services)
 
-	c := commands.NewCommander(bot, conf, insure, sessions.NewMemSessions())
+	c := commands.NewCommander(bot, conf, insure, sessions.NewMemSessions(), tob)
 	//go c.WatchConfig(isModifyConfig)
 
 	u := tgapi.NewUpdate(0)
