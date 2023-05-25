@@ -34,8 +34,8 @@ var (
 	registered_commands = map[string]RegisteredCommand{}
 	yesNoKeyboardCalc   = tgapi.NewInlineKeyboardMarkup(
 		tgapi.NewInlineKeyboardRow(
-			tgapi.NewInlineKeyboardButtonData(YES, "calc yes"),
-			tgapi.NewInlineKeyboardButtonData(NO, "calc no"),
+			tgapi.NewInlineKeyboardButtonData(YES, "c yes"),
+			tgapi.NewInlineKeyboardButtonData(NO, "c no"),
 		))
 )
 
@@ -163,20 +163,23 @@ func (cmder *Commander) HandlerCalc(update tgapi.Update, ses *sessions.Session) 
 		ses.IdxRequest++
 	}
 	ses.LastMessageID = m.MessageID
-	if ses.IdxRequest >= len(requestsListCalc) {
-		ses.ResetSession()
-	}
+	ses.LastRequestIsError = false
+	// if ses.IdxRequest >= len(requestsListCalc) {
+	// 	ses.ResetSession()
+	// }
 	cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
 }
 
 func (cmder *Commander) HandlerCallback(update tgapi.Update) {
-	// log.Println("HandlerCallback: >>>>>>>>>>")
-	// ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID)
-	// log.Println("HandlerCallback: start :", ses, err)
-
+	ses, err := cmder.Sessions.GetSession(update.CallbackQuery.Message.Chat.ID)
+	if err != nil { // clear button
+		cmder.bot.Send(tgapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID,
+			update.CallbackQuery.Message.Text))
+		return
+	}
 	callbackData := strings.Split(update.CallbackQuery.Data, " ")
 	editText := ""
-	switch callbackData[0] {
+	switch ses.ActionName {
 	case "calc":
 		log.Println("HandlerCallback: start calc:", callbackData[1])
 		if callbackData[1] == "yes" {
@@ -198,8 +201,9 @@ func (cmder *Commander) HandlerCallback(update tgapi.Update) {
 		mes1 := tgapi.NewMessage(update.CallbackQuery.Message.Chat.ID, editText)
 		mes1.ParseMode = "Markdown"
 		cmder.bot.Send(mes1)
-		//ses.ResetSession()
 
+		ses.ResetSession()
+		cmder.Sessions.UpdateSession(update.CallbackQuery.Message.Chat.ID, ses)
 	default:
 	}
 

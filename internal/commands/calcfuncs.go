@@ -111,22 +111,6 @@ func (r *Commander) Get_yes_no(callbackData string) (string, error) {
 	return str, nil
 }
 
-func (r *Commander) finishCalculate(updMes *tgapi.Message) error {
-	ses, _ := r.Sessions.GetSession(updMes.Chat.ID)
-	log.Println("finishCalculate: start")
-
-	sum, err := (*r).Product_service.Calculate()
-	if err != nil {
-		log.Println("error finishCalculate: calc:", err)
-		requestsListCalc[ses.IdxRequest].wrong_text = WRONG_CALC
-		return err
-	}
-
-	str := fmt.Sprintf(TXT_FINISH, sum)
-	requestsListCalc[ses.IdxRequest].ok_text = str
-	return nil
-}
-
 func (r *Commander) str2int(updMes *tgapi.Message) (int, error) {
 	res, err := strconv.Atoi(strings.TrimSpace(updMes.Text))
 	return res, err
@@ -134,26 +118,6 @@ func (r *Commander) str2int(updMes *tgapi.Message) (int, error) {
 func (r *Commander) str2float(updMes *tgapi.Message) (float64, error) {
 	res, err := strconv.ParseFloat(strings.TrimSpace(updMes.Text), 64)
 	return res, err
-}
-
-func (r *Commander) str2pair(updMes *tgapi.Message) (int, float64, error) {
-	w := 0
-	fot := 0.0
-	var err error
-	str_arr := strings.Split(strings.TrimSpace(updMes.Text), " ")
-	if len(str_arr) != 2 {
-		return w, fot, fmt.Errorf("error in str2pair: lenght != 2")
-	}
-	w, err = strconv.Atoi(str_arr[0])
-	if err != nil {
-		return w, fot, err
-	}
-	fot, err = strconv.ParseFloat(str_arr[1], 64)
-	if err != nil {
-		return w, fot, err
-	}
-
-	return w, fot, err
 }
 
 func okBinIin(biniin string) bool {
