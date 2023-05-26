@@ -145,7 +145,7 @@ func (cmder *Commander) HandlerCalc(update tgapi.Update, ses *sessions.Session) 
 		}
 		ses.LastRequestIsError = true
 	} else {
-		log.Println("HandlerCalc: idx=", ses.IdxRequest)
+		//log.Println("HandlerCalc: idx=", ses.IdxRequest)
 		mes := tgapi.NewMessage(update.Message.Chat.ID, requestsListCalc[ses.IdxRequest].ok_text)
 		mes.ParseMode = "Markdown"
 		switch ses.IdxRequest {
