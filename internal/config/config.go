@@ -133,3 +133,6 @@ func (conf *Config) Watch(configFile string, watchTime time.Duration, ok chan an
 		time.Sleep(watchTime)
 	}
 }
+
+func (conf *Config) Close() {
+}

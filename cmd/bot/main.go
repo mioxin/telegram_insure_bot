@@ -59,9 +59,14 @@ func parsConf() {
 	}
 }
 
+func botOut() {
+	conf.Close()
+}
+
 func main() {
 
 	parsConf()
+	defer botOut()
 
 	tob, err := services.NewFileTypeOfBusns(TYPE_OF_BUSNS_FILENAME)
 	if err != nil {
