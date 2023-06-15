@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	URL                 string = "https://old.stat.gov.kz/api/juridical/counter/api/?bin=840629300619&lang=ru"
+	URL                 string = "https://old.stat.gov.kz/api/juridical/counter/api/" //?bin=840629300619&lang=ru"
 	WRONG_BIN_NOT_FOUND string = "ИИН или БИН не найден (не зарегистрирован в госорганах)."
 )
 
@@ -39,7 +39,7 @@ func NewCompany(sbin string) (*Company, error) {
 	}
 
 	hh := NewHttpHelper().
-		URL("https://old.stat.gov.kz/api/juridical/counter/api/").
+		URL(URL).
 		Param("bin", sbin).
 		Param("lang", "ru").Get()
 	if err := hh.Err(); err != nil {
