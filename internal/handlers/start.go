@@ -21,7 +21,7 @@ func (h *HandlerCommands) start(input_message *tgapi.Message) (string, int) {
 	log.Printf("start: [%s] %s", input_message.From.UserName, input_message.Text)
 
 	msg := tgapi.NewMessage(input_message.Chat.ID, START)
-	m, _ := h.bot.Send(msg)
+	m, _ := h.Bot.Send(msg)
 	return "", m.MessageID
 }
 

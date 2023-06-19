@@ -12,7 +12,7 @@ func (h *HandlerCommands) about(input_message *tgapi.Message) (string, int) {
 	log.Printf("about: [%s] %s", input_message.From.UserName, input_message.Text)
 
 	msg := tgapi.NewMessage(input_message.Chat.ID, ABOUT)
-	m, _ := h.bot.Send(msg)
+	m, _ := h.Bot.Send(msg)
 	return "", m.MessageID
 }
 
