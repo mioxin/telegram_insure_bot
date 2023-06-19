@@ -88,35 +88,30 @@ func (h *HandlerCalc) Execute() {
 }
 
 func (h *HandlerCalc) ExecuteCallback() {
+	log.Println("HandlerCallback: start calc update:", h.Update)
 	callbackData := strings.Split(h.Update.CallbackQuery.Data, " ")
 	editText := ""
-	switch h.Ses.ActionName {
-	case "calc":
-		log.Println("HandlerCallback: start calc:", callbackData[1])
-		if callbackData[1] == "yes" {
-			editText = TXT_LAST5YEAR + " *" + YES + "*\n\n"
-		} else {
-			editText = TXT_LAST5YEAR + " *" + NO + "*\n\n"
-		}
-		mes := tgapi.NewEditMessageText(h.Update.CallbackQuery.Message.Chat.ID, h.Update.CallbackQuery.Message.MessageID, editText)
-		mes.ParseMode = "Markdown"
-		h.Bot.Send(mes)
-		//h.Get_yes_no(callbackData[1])
-
-		if txt, err := h.Get_yes_no(callbackData[1]); err != nil {
-			log.Println("error HandlerCallback: err calc:", WRONG_CALC, err)
-			editText = txt + WRONG_CALC
-		} else {
-			editText = txt
-		}
-		mes1 := tgapi.NewMessage(h.Update.CallbackQuery.Message.Chat.ID, editText)
-		mes1.ParseMode = "Markdown"
-		h.Bot.Send(mes1)
-
-		h.Ses.ResetSession()
-	default: // clear button
-		h.Bot.Send(tgapi.NewEditMessageText(h.Update.CallbackQuery.Message.Chat.ID, h.Update.CallbackQuery.Message.MessageID,
-			h.Update.CallbackQuery.Message.Text))
+	log.Println("HandlerCallback: start calc callback Data:", callbackData[1])
+	if callbackData[1] == "yes" {
+		editText = TXT_LAST5YEAR + " *" + YES + "*\n\n"
+	} else {
+		editText = TXT_LAST5YEAR + " *" + NO + "*\n\n"
 	}
+	mes := tgapi.NewEditMessageText(h.Update.CallbackQuery.Message.Chat.ID, h.Update.CallbackQuery.Message.MessageID, editText)
+	mes.ParseMode = "Markdown"
+	h.Bot.Send(mes)
+	//h.Get_yes_no(callbackData[1])
+
+	if txt, err := h.Get_yes_no(callbackData[1]); err != nil {
+		log.Println("error HandlerCallback: err calc:", WRONG_CALC, err)
+		editText = txt + WRONG_CALC
+	} else {
+		editText = txt
+	}
+	mes1 := tgapi.NewMessage(h.Update.CallbackQuery.Message.Chat.ID, editText)
+	mes1.ParseMode = "Markdown"
+	h.Bot.Send(mes1)
+
+	h.Ses.ResetSession()
 
 }
