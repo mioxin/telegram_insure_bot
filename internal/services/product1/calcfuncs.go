@@ -1,4 +1,4 @@
-package commands
+package product1
 
 import (
 	"fmt"
@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	TXT_BIN       string = "Ваш БИН или ИИН."
-	TXT_VID       string = "Введите Основной вид экономической деятельности (одно 5-ти значное число)."
-	TXT_TOTAL     string = `Введите общее количество работников с учетом работников филиалов (одно число).`
-	TXT_GFOT      string = `Введите ГФОТ.`
-	TXT_LAST5YEAR string = `Были ли страховые случаи за последние 5 лет?`
-	TXT_FINISH    string = `*Результат расчета.*
+	//TXT_LAST5YEAR string = `Были ли страховые случаи за последние 5 лет?`
+
+	TXT_VID    string = "Введите Основной вид экономической деятельности (одно 5-ти значное число)."
+	TXT_TOTAL  string = `Введите общее количество работников с учетом работников филиалов (одно число).`
+	TXT_GFOT   string = `Введите ГФОТ.`
+	TXT_FINISH string = `*Результат расчета.*
 ----------------
 %v
 `
@@ -26,7 +26,7 @@ const (
 	// _ГФОТ работников с окладом >10 МЗП:_ *%v*
 	// _Работники с ежемесячым окладом <=10 МЗП:_ *%v*
 	// _ГФОТ работников с окладом <=10 МЗП:_ *%v*
-	WRONG_CALC   string = `Произошла ошибка при расчете. Проверьте введённые данные и порпобуйте повторить расчет сначала.`
+	//WRONG_CALC   string = `Произошла ошибка при расчете. Проверьте введённые данные и порпобуйте повторить расчет сначала.`
 	WRONG_1DIGIT string = "Введите одно число."
 	WRONG_5SIGN  string = "Введите одно 5-значное число."
 	WRONG_BIN    string = "ИИН или БИН введен не корректно."
@@ -41,68 +41,68 @@ func (e ErrorBinIinNotFound) Error() string {
 }
 
 func init() {
-	requestsListCalc = append(requestsListCalc, reguest{TXT_TOTAL, WRONG_BIN, (*Commander).binIin})
-	requestsListCalc = append(requestsListCalc, reguest{TXT_TOTAL, WRONG_5SIGN, (*Commander).oked})
-	requestsListCalc = append(requestsListCalc, reguest{TXT_GFOT, WRONG_1DIGIT, (*Commander).totalWorker})
-	requestsListCalc = append(requestsListCalc, reguest{TXT_LAST5YEAR, WRONG_1DIGIT, (*Commander).gfot})
-	//requestsListCalc = append(requestsListCalc, reguest{"", "", (*Commander).finishCalculate})
+	requestsListCalc = append(requestsListCalc, reguest{TXT_TOTAL, WRONG_BIN, (*HandlerCalc).binIin})
+	requestsListCalc = append(requestsListCalc, reguest{TXT_TOTAL, WRONG_5SIGN, (*HandlerCalc).oked})
+	requestsListCalc = append(requestsListCalc, reguest{TXT_GFOT, WRONG_1DIGIT, (*HandlerCalc).totalWorker})
+	requestsListCalc = append(requestsListCalc, reguest{TXT_LAST5YEAR, WRONG_1DIGIT, (*HandlerCalc).gfot})
+	//requestsListCalc = append(requestsListCalc, reguest{"", "", (*HandlerCalc).finishCalculate})
 }
 
-func (r *Commander) binIin(updMes *tgapi.Message) error {
+func (r *HandlerCalc) binIin(updMes *tgapi.Message) error {
 	if !okBinIin(updMes.Text) {
 		return fmt.Errorf("error binIin: invalid bin/iin %v", updMes.Text)
 	}
 	if comp, err := services.NewCompany(strings.TrimSpace(updMes.Text)); err != nil {
 		return ErrorBinIinNotFound{updMes.Text}
 	} else {
-		r.Product_service.(*services.Insurance).Vid = comp.OkedCode
-		r.Product_service.(*services.Insurance).VidDescr = comp.OkedName
+		r.ins.Vid = comp.OkedCode
+		r.ins.VidDescr = comp.OkedName
 		log.Println("binIin: user:", updMes.Chat.UserName, comp)
 	}
 	return nil
 }
 
-func (r *Commander) oked(updMes *tgapi.Message) error {
+func (r *HandlerCalc) oked(updMes *tgapi.Message) error {
 	if len(updMes.Text) != 5 {
 		return fmt.Errorf("error oked: expexted 5 sign only %v", updMes.Text)
 	}
 
 	vid := strings.TrimSpace(updMes.Text)
-	if descr, err := r.TypeOfBuseness.Get(vid); err != nil {
+	if descr, err := r.ins.TypeOfBuseness.Get(vid); err != nil {
 		return err
 	} else {
-		r.Product_service.(*services.Insurance).VidDescr = descr
+		r.ins.VidDescr = descr
 	}
-	r.Product_service.(*services.Insurance).Vid = vid
+	r.ins.Vid = vid
 	return nil
 }
 
-func (r *Commander) totalWorker(updMes *tgapi.Message) error {
+func (r *HandlerCalc) totalWorker(updMes *tgapi.Message) error {
 	var err error
-	r.Product_service.(*services.Insurance).Total_work, err = r.str2int(updMes)
+	r.ins.Total_work, err = r.str2int(updMes)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Commander) gfot(updMes *tgapi.Message) error {
+func (r *HandlerCalc) gfot(updMes *tgapi.Message) error {
 	var err error
-	r.Product_service.(*services.Insurance).Gfot, err = r.str2float(updMes)
+	r.ins.Gfot, err = r.str2float(updMes)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Commander) Get_yes_no(callbackData string) (string, error) {
+func (r *HandlerCalc) Get_yes_no(callbackData string) (string, error) {
 	var err error
 	log.Println("Get_yes_no: start", callbackData, err)
 	if callbackData == "yes" {
-		r.Product_service.(*services.Insurance).EventInLast5Year = true
+		r.ins.EventInLast5Year = true
 	}
 
-	sum, err := (*r).Product_service.Calculate()
+	sum, err := (*r).ins.Calculate()
 	if err != nil {
 		return "", err
 	}
@@ -111,11 +111,11 @@ func (r *Commander) Get_yes_no(callbackData string) (string, error) {
 	return str, nil
 }
 
-func (r *Commander) str2int(updMes *tgapi.Message) (int, error) {
+func (r *HandlerCalc) str2int(updMes *tgapi.Message) (int, error) {
 	res, err := strconv.Atoi(strings.TrimSpace(updMes.Text))
 	return res, err
 }
-func (r *Commander) str2float(updMes *tgapi.Message) (float64, error) {
+func (r *HandlerCalc) str2float(updMes *tgapi.Message) (float64, error) {
 	res, err := strconv.ParseFloat(strings.TrimSpace(updMes.Text), 64)
 	return res, err
 }

@@ -19,7 +19,7 @@ func (h *HandlerCommands) help(input_message *tgapi.Message) (string, int) {
 		}
 	}
 	msg := tgapi.NewMessage(input_message.Chat.ID, str+HELP)
-	m, _ := h.bot.Send(msg)
+	m, _ := h.Bot.Send(msg)
 	return "", m.MessageID
 }
 

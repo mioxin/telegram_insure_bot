@@ -1,4 +1,4 @@
-package commands
+package product1
 
 import "testing"
 
