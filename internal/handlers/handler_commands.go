@@ -29,14 +29,11 @@ func NewHandlerCommand(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.Up
 }
 
 func (h *HandlerCommands) Execute() {
-	// If we got a message
 	if command, ok := registered_commands[h.Update.Message.Command()]; ok {
 		_, okAll := h.Ses.AccessCommand["all"]
 		_, okCmd := h.Ses.AccessCommand[h.Update.Message.Command()]
 		if okAll || okCmd {
 			h.Ses.ActionName, h.Ses.LastMessageID = command.Worker(h, h.Update.Message)
-			//h.Sessions.UpdateSession(h.Update.Message.Chat.ID, ses)
-			//log.Println(ses)
 		} else {
 			msg := tgapi.NewMessage(h.Update.Message.Chat.ID, WRONG_ACCESS)
 			h.Bot.Send(msg)

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"log"
+	"runtime/debug"
 	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -44,9 +45,9 @@ func NewCommander(bot *tgapi.BotAPI, conf IConfig) *Commander {
 	serv := product1.NewInsurence("ОСНС")
 	prods["calc"] = serv
 
-	ses := sessions.NewMemSessions()
+	s := sessions.NewMemSessions()
 
-	return &Commander{bot, conf, prods, ses}
+	return &Commander{bot, conf, prods, s}
 }
 
 func (cmder *Commander) Start() {
@@ -69,19 +70,21 @@ func (cmder *Commander) Start() {
 func (cmder *Commander) handl(update tgapi.Update) error {
 	defer func() {
 		if panicVal := recover(); panicVal != nil {
-			log.Printf("recover panic in HandlerMain %v:", panicVal)
+			log.Printf("recover panic in HandlerMain %v:\n%v", panicVal, string(debug.Stack()))
 		}
 	}()
 
 	var h IHandler
 	var ses *sessions.Session
+	var chatID int64
 	log.Printf("Sessions in HandlerMain: %v", cmder.Sessions)
 
 	switch {
 	case update.CallbackQuery != nil:
 		log.Printf("CallbackQuery in HandlerMain: %v", update.CallbackQuery)
+		chatID = update.CallbackQuery.Message.Chat.ID
+		ses, _ = cmder.Sessions.GetSession(chatID)
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
-		//cmder.HandlerCallback(ses, update)
 
 	case update.Message.IsCommand():
 		log.Printf("Command in HandlerMain: %v", update.Message)
@@ -91,30 +94,25 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 		} else {
 			ses.AccessCommand["about"] = struct{}{}
 		}
-		cmder.Sessions.AddSession(update.Message.Chat.ID, ses)
-
+		chatID = update.Message.Chat.ID
+		cmder.Sessions.AddSession(chatID, ses)
 		h = handlers.NewHandlerCommand(cmder.bot, ses, update)
-		//cmder.HandlerCommand(update)
 
-	case update.Message != nil:
-		log.Printf("Message in HandlerMain: %v", update.Message)
-		if ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID); err == nil {
-			h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
-		} else {
-			log.Printf("error HandlerMain: not found session for Message \"%v\" (user %v)\n%v", update.Message, update.Message.Chat.UserName, err)
-		}
+	case update.CallbackQuery != nil || update.Message != nil:
+		log.Printf("Message in HandlerMain: %v", update)
+		chatID = update.Message.Chat.ID
+		ses, _ = cmder.Sessions.GetSession(chatID)
+		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 
 	default:
 		log.Printf("error HandlerMain: invalid Message \"%v\" (user %v)", update.Message, update.Message.Chat.UserName)
-
 	}
 
 	h.Execute()
-	cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
-	// if update.Message != nil {
-	// } else {
-	// 	log.Printf("error HandlerMain: cant update session Message \"%v\" (user %v)", update.Message, update.Message.Chat.UserName)
-	// }
+
+	if err := cmder.Sessions.UpdateSession(chatID, ses); err != nil {
+		log.Printf("After session update in HandlerMain: %v\n %v", err, cmder.Sessions)
+	}
 
 	return nil
 }

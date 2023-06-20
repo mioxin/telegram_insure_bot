@@ -44,6 +44,7 @@ func NewHandlerCalc(ins *Insurance, bot *tgapi.BotAPI, ses *sessions.Session, up
 }
 
 func (h *HandlerCalc) Execute() {
+	defer log.Println("session after Execute", h.Ses)
 	err := requestsListCalc[h.Ses.IdxRequest].worker(h, h.Update.Message)
 	var m tgapi.Message
 	if err != nil {
