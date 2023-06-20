@@ -97,7 +97,7 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 		//cmder.HandlerCommand(update)
 
 	case update.Message != nil:
-		log.Printf("Message in HandlerMain: %v\n %v", update.Message)
+		log.Printf("Message in HandlerMain: %v", update.Message)
 		if ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID); err == nil {
 			h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 		} else {
