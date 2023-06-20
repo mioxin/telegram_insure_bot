@@ -18,8 +18,8 @@ func NewHandlerMessage(bot *tgapi.BotAPI, ses *sessions.Session, prods map[strin
 }
 
 func (h *HandlerMessage) Execute() {
-	log.Printf("HandlerMess Execute start")
-	if h.Ses.ActionName == "" {
+	log.Printf("HandlerMess Execute start: %v", h.Ses)
+	if h.Ses == nil || h.Ses.ActionName == "" {
 		//clear button if callback
 		if h.Update.CallbackQuery != nil {
 			log.Printf("HandlerMess Execute clear callback %v", h.Update)
