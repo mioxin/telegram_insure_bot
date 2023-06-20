@@ -74,10 +74,17 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 	}()
 
 	var h IHandler
+	var ses *sessions.Session
+	log.Printf("Sessions in HandlerMain: %v", cmder.Sessions)
 
-	ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID)
-	if err != nil {
-		log.Printf("error HandlerMain: not found session for Message \"%v\" (user %v)", update.Message.Text, update.Message.Chat.UserName)
+	switch {
+	case update.CallbackQuery != nil:
+		log.Printf("CallbackQuery in HandlerMain: %v", update.CallbackQuery)
+		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
+		//cmder.HandlerCallback(ses, update)
+
+	case update.Message.IsCommand():
+		log.Printf("Command in HandlerMain: %v", update.Message)
 		ses = sessions.NewSession(update.Message.Chat.UserName)
 		if cmder.Config.IsAccess(update.Message.Chat.UserName) {
 			ses.AccessCommand["all"] = struct{}{}
@@ -85,19 +92,17 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 			ses.AccessCommand["about"] = struct{}{}
 		}
 		cmder.Sessions.AddSession(update.Message.Chat.ID, ses)
-	}
 
-	switch {
-	case update.CallbackQuery != nil:
-		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
-		//cmder.HandlerCallback(ses, update)
-
-	case update.Message.IsCommand():
 		h = handlers.NewHandlerCommand(cmder.bot, ses, update)
 		//cmder.HandlerCommand(update)
 
 	case update.Message != nil:
-		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
+		log.Printf("Message in HandlerMain: %v\n %v", update.Message)
+		if ses, err := cmder.Sessions.GetSession(update.Message.Chat.ID); err == nil {
+			h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
+		} else {
+			log.Printf("error HandlerMain: not found session for Message \"%v\" (user %v)\n%v", update.Message, update.Message.Chat.UserName, err)
+		}
 
 	default:
 		log.Printf("error HandlerMain: invalid Message \"%v\" (user %v)", update.Message, update.Message.Chat.UserName)
@@ -106,6 +111,10 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 
 	h.Execute()
 	cmder.Sessions.UpdateSession(update.Message.Chat.ID, ses)
+	// if update.Message != nil {
+	// } else {
+	// 	log.Printf("error HandlerMain: cant update session Message \"%v\" (user %v)", update.Message, update.Message.Chat.UserName)
+	// }
 
 	return nil
 }
