@@ -5,10 +5,8 @@ import (
 	"log"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
-
-const HELP string = `Команды Вы можете набрать с помощью клавиатуры или выбрать в меню.
-`
 
 func (h *HandlerCommands) help(input_message *tgapi.Message) (string, int) {
 	log.Printf("help: [%s] %s", input_message.From.UserName, input_message.Text)
@@ -18,7 +16,7 @@ func (h *HandlerCommands) help(input_message *tgapi.Message) (string, int) {
 			str += fmt.Sprintf("/%s - %s\n", key, cmnd.Description)
 		}
 	}
-	msg := tgapi.NewMessage(input_message.Chat.ID, str+HELP)
+	msg := tgapi.NewMessage(input_message.Chat.ID, str+resources.HELP)
 	m, _ := h.Bot.Send(msg)
 	return "", m.MessageID
 }
