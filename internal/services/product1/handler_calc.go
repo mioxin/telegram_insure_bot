@@ -8,15 +8,7 @@ import (
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/handlers"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
-)
-
-const (
-	WRONG_AGAIN   string = `Опять ошибка. `
-	TXT_LAST5YEAR string = `Были ли страховые случаи за последние 5 лет?`
-	WRONG_CALC    string = `Произошла ошибка при расчете. Проверьте введённые данные и порпобуйте повторить расчет сначала.`
-
-	YES string = "Да"
-	NO  string = "Нет"
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
 type HandlerCalc struct {
@@ -34,8 +26,8 @@ var (
 	requestsListCalc  = make([]reguest, 0)
 	yesNoKeyboardCalc = tgapi.NewInlineKeyboardMarkup(
 		tgapi.NewInlineKeyboardRow(
-			tgapi.NewInlineKeyboardButtonData(YES, "c yes"),
-			tgapi.NewInlineKeyboardButtonData(NO, "c no"),
+			tgapi.NewInlineKeyboardButtonData(resources.YES, "c yes"),
+			tgapi.NewInlineKeyboardButtonData(resources.NO, "c no"),
 		))
 )
 
@@ -50,7 +42,7 @@ func (h *HandlerCalc) Execute() {
 	if err != nil {
 		if err, ok := err.(ErrorBinIinNotFound); ok {
 			log.Printf("HandlerCalc: idx=%v. %v\n", h.Ses.IdxRequest, err)
-			mes := tgapi.NewMessage(h.Update.Message.Chat.ID, TXT_VID)
+			mes := tgapi.NewMessage(h.Update.Message.Chat.ID, resources.TXT_VID)
 			m, _ = h.Bot.Send(mes)
 			h.Ses.IdxRequest++
 			h.Ses.LastMessageID = m.MessageID
@@ -59,7 +51,7 @@ func (h *HandlerCalc) Execute() {
 		}
 		log.Printf("error HandlerCalc: Idx=%v %v", h.Ses.IdxRequest, err)
 		if h.Ses.LastRequestIsError {
-			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, WRONG_AGAIN+requestsListCalc[h.Ses.IdxRequest].wrong_text))
+			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, resources.WRONG_AGAIN+requestsListCalc[h.Ses.IdxRequest].wrong_text))
 		} else {
 			m, _ = h.Bot.Send(tgapi.NewMessage(h.Update.Message.Chat.ID, requestsListCalc[h.Ses.IdxRequest].wrong_text))
 		}
@@ -94,9 +86,9 @@ func (h *HandlerCalc) ExecuteCallback() {
 	editText := ""
 	log.Println("HandlerCallback: start calc callback Data:", callbackData[1])
 	if callbackData[1] == "yes" {
-		editText = TXT_LAST5YEAR + " *" + YES + "*\n\n"
+		editText = resources.TXT_LAST5YEAR + " *" + resources.YES + "*\n\n"
 	} else {
-		editText = TXT_LAST5YEAR + " *" + NO + "*\n\n"
+		editText = resources.TXT_LAST5YEAR + " *" + resources.NO + "*\n\n"
 	}
 	mes := tgapi.NewEditMessageText(h.Update.CallbackQuery.Message.Chat.ID, h.Update.CallbackQuery.Message.MessageID, editText)
 	mes.ParseMode = "Markdown"
@@ -104,8 +96,8 @@ func (h *HandlerCalc) ExecuteCallback() {
 	//h.Get_yes_no(callbackData[1])
 
 	if txt, err := h.Get_yes_no(callbackData[1]); err != nil {
-		log.Println("error HandlerCallback: err calc:", WRONG_CALC, err)
-		editText = txt + WRONG_CALC
+		log.Println("error HandlerCallback: err calc:", resources.WRONG_CALC, err)
+		editText = txt + resources.WRONG_CALC
 	} else {
 		editText = txt
 	}

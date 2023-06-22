@@ -8,28 +8,7 @@ import (
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
-)
-
-const (
-	//TXT_LAST5YEAR string = `Были ли страховые случаи за последние 5 лет?`
-
-	TXT_VID    string = "Введите Основной вид экономической деятельности (одно 5-ти значное число)."
-	TXT_TOTAL  string = `Введите общее количество работников с учетом работников филиалов (одно число).`
-	TXT_GFOT   string = `Введите ГФОТ.`
-	TXT_FINISH string = `*Результат расчета.*
-----------------
-%v
-`
-	// _Общее количество работников:_ *%v*
-	// _Основной вид экономической деятельности:_ *%v*
-	// _Работники с ежемесячым окладом >10 МЗП:_ *%v*
-	// _ГФОТ работников с окладом >10 МЗП:_ *%v*
-	// _Работники с ежемесячым окладом <=10 МЗП:_ *%v*
-	// _ГФОТ работников с окладом <=10 МЗП:_ *%v*
-	//WRONG_CALC   string = `Произошла ошибка при расчете. Проверьте введённые данные и порпобуйте повторить расчет сначала.`
-	WRONG_1DIGIT string = "Введите одно число."
-	WRONG_5SIGN  string = "Введите одно 5-значное число."
-	WRONG_BIN    string = "ИИН или БИН введен не корректно."
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
 type ErrorBinIinNotFound struct {
@@ -41,10 +20,10 @@ func (e ErrorBinIinNotFound) Error() string {
 }
 
 func init() {
-	requestsListCalc = append(requestsListCalc, reguest{TXT_TOTAL, WRONG_BIN, (*HandlerCalc).binIin})
-	requestsListCalc = append(requestsListCalc, reguest{TXT_TOTAL, WRONG_5SIGN, (*HandlerCalc).oked})
-	requestsListCalc = append(requestsListCalc, reguest{TXT_GFOT, WRONG_1DIGIT, (*HandlerCalc).totalWorker})
-	requestsListCalc = append(requestsListCalc, reguest{TXT_LAST5YEAR, WRONG_1DIGIT, (*HandlerCalc).gfot})
+	requestsListCalc = append(requestsListCalc, reguest{resources.TXT_TOTAL, resources.WRONG_BIN, (*HandlerCalc).binIin})
+	requestsListCalc = append(requestsListCalc, reguest{resources.TXT_TOTAL, resources.WRONG_5SIGN, (*HandlerCalc).oked})
+	requestsListCalc = append(requestsListCalc, reguest{resources.TXT_GFOT, resources.WRONG_1DIGIT, (*HandlerCalc).totalWorker})
+	requestsListCalc = append(requestsListCalc, reguest{resources.TXT_LAST5YEAR, resources.WRONG_1DIGIT, (*HandlerCalc).gfot})
 	//requestsListCalc = append(requestsListCalc, reguest{"", "", (*HandlerCalc).finishCalculate})
 }
 
@@ -107,7 +86,7 @@ func (r *HandlerCalc) Get_yes_no(callbackData string) (string, error) {
 		return "", err
 	}
 
-	str := fmt.Sprintf(TXT_FINISH, sum)
+	str := fmt.Sprintf(resources.TXT_FINISH, sum)
 	return str, nil
 }
 

@@ -3,11 +3,8 @@ package services
 import (
 	"fmt"
 	"log"
-)
 
-const (
-	URL                 string = "https://old.stat.gov.kz/api/juridical/counter/api/" //?bin=840629300619&lang=ru"
-	WRONG_BIN_NOT_FOUND string = "ИИН или БИН не найден (не зарегистрирован в госорганах)."
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
 type Company struct {
@@ -39,7 +36,7 @@ func NewCompany(sbin string) (*Company, error) {
 	}
 
 	hh := NewHttpHelper().
-		URL(URL).
+		URL(resources.URL).
 		Param("bin", sbin).
 		Param("lang", "ru").Get()
 	if err := hh.Err(); err != nil {

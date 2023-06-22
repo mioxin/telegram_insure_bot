@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const DEFAULT_LOG_FILE string = "bot.log"
+
 type Config struct {
 	Token   string
 	LogFile string
@@ -62,7 +64,7 @@ func ParseConfigFile(config_file io.Reader) (*Config, error) {
 			if token == "" {
 				return nil, fmt.Errorf("error ParseConfigFile: in the config file secure token expected")
 			}
-		case "log-file":
+		case "log_file":
 			logFile = strings.TrimSpace(arr_str[1])
 		case "deny":
 			arr_deny := strings.Split(strings.ToLower(arr_str[1]), ",")
@@ -82,7 +84,7 @@ func ParseConfigFile(config_file io.Reader) (*Config, error) {
 		}
 	}
 	if logFile == "" {
-		logFile = "bot.log"
+		logFile = DEFAULT_LOG_FILE
 	}
 
 	return &Config{Token: token, LogFile: logFile, Deny: deny, Allow: allow, AccWord: acc_word}, nil

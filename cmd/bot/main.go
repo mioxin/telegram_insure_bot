@@ -4,17 +4,12 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/commands"
 	"github.com/mrmioxin/gak_telegram_bot/internal/config"
 	"github.com/mrmioxin/gak_telegram_bot/internal/httpclient"
-)
-
-const (
-	CONFIG_FILE_NAME      string        = "bot.cfg"
-	DURATION_WATCH_CONFIG time.Duration = 3 * time.Second
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
 var (
@@ -41,7 +36,7 @@ func parsConf() {
 	flag.Parse()
 
 	if configFile == "" {
-		configFile = CONFIG_FILE_NAME
+		configFile = resources.CONFIG_FILE_NAME
 	}
 
 	if conf, err = config.NewConfig(configFile); err != nil {
@@ -53,9 +48,9 @@ func parsConf() {
 	}
 
 	if !verbouse {
-		output_log, err := os.OpenFile(conf.LogFile, os.O_RDWR|os.O_CREATE, 0666)
+		output_log, err := os.OpenFile(conf.LogFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 		if err != nil {
-			log.Fatal("Cant open ouput file for loging bot.log.\n", err)
+			log.Fatal("Cant open ouput file for loging ", conf.LogFile, ".\n", err)
 		}
 		log.SetOutput(output_log)
 	}
@@ -76,10 +71,10 @@ func main() {
 	}
 
 	bot.Debug = debug
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	log.Printf("Authorized on account %s\n", bot.Self.UserName)
 
 	isModifyConfig := make(chan any)
-	go conf.Watch(CONFIG_FILE_NAME, DURATION_WATCH_CONFIG, isModifyConfig)
+	go conf.Watch(resources.CONFIG_FILE_NAME, resources.DURATION_WATCH_CONFIG, isModifyConfig)
 
 	c := commands.NewCommander(bot, conf)
 	c.Start()

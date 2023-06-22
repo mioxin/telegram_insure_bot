@@ -8,9 +8,8 @@ import (
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
-
-const TYPE_OF_BUSNS_FILENAME string = "vid.txt"
 
 type ITypeOfBusiness interface {
 	Get(vid string) (string, error)
@@ -26,9 +25,9 @@ type Insurance struct {
 }
 
 func NewInsurence(name string) services.IService {
-	tob, err := services.NewFileTypeOfBusns(TYPE_OF_BUSNS_FILENAME)
+	tob, err := services.NewFileTypeOfBusns(resources.TYPE_OF_BUSNS_FILENAME)
 	if err != nil {
-		log.Fatal("<<<", TYPE_OF_BUSNS_FILENAME, ">>> ", err)
+		log.Fatal("<<<", resources.TYPE_OF_BUSNS_FILENAME, ">>> ", err)
 	}
 
 	return &Insurance{Name: name, TypeOfBuseness: tob}
