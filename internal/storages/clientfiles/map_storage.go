@@ -37,8 +37,10 @@ func (mf *MapStorage) Close() {
 		log.Printf("map Storage Close: error while open files_id.json. Error %v\n", err)
 	}
 	defer fl.Close()
+	wr := bufio.NewWriter(fl)
+	defer wr.Flush()
 
-	jenc := json.NewEncoder(bufio.NewWriter(fl))
+	jenc := json.NewEncoder(wr)
 
 	for _, v := range mf.store {
 		err := jenc.Encode(v)
