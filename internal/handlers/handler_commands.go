@@ -4,14 +4,13 @@ import (
 	"log"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/mrmioxin/gak_telegram_bot/internal/storages/filesid"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
 	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
 type IFilesID interface {
 	GetFileId(name string) (string, error)
-	SetFileId(name, id string)
+	SetFileId(name, user, id string) error
 }
 
 type HandlerCommands struct {
@@ -23,12 +22,12 @@ type RegisteredCommand struct {
 	Description string
 	Worker      func(c *HandlerCommands, mes *tgapi.Message) (string, int)
 	ShowInHelp  bool
+	Adm         bool //command fo admins
 }
 
 var registered_commands = map[string]RegisteredCommand{}
 
-func NewHandlerCommand(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.Update) *HandlerCommands {
-	files_id := filesid.NewMapFilesId()
+func NewHandlerCommand(bot *tgapi.BotAPI, files_id IFilesID, ses *sessions.Session, update tgapi.Update) *HandlerCommands {
 	return &HandlerCommands{Handler{bot, ses, update}, files_id}
 }
 

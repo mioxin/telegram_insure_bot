@@ -1,9 +1,7 @@
 package product1
 
 import (
-	"fmt"
 	"log"
-	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
@@ -31,17 +29,6 @@ func NewInsurence(name string) services.IService {
 	}
 
 	return &Insurance{Name: name, TypeOfBuseness: tob}
-}
-
-func (ins *Insurance) Calculate() (string, error) {
-	sum := 70000.0
-	bonus := 23000.0
-
-	//TODO calculate sum
-	log.Println("Calculate 5 sec ...")
-	time.Sleep(1 * time.Second)
-	var str string = fmt.Sprintf("Сумма страховки: *%.2f тенге*\nВаша скидка: *%.2f тенге*", sum, bonus)
-	return str, nil
 }
 
 func (ins *Insurance) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.Update) {

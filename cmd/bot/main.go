@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/commands"
@@ -56,14 +57,9 @@ func parsConf() {
 	}
 }
 
-func botOut() {
-	conf.Close()
-}
-
 func main() {
 
 	parsConf()
-	defer botOut()
 
 	bot, err := tgapi.NewBotAPIWithClient(conf.Token, httpclient.NewHTTPClient())
 	if err != nil {
@@ -72,10 +68,20 @@ func main() {
 
 	bot.Debug = debug
 	log.Printf("Authorized on account %s\n", bot.Self.UserName)
+	chSignal := make(chan os.Signal)
 
 	isModifyConfig := make(chan any)
 	go conf.Watch(resources.CONFIG_FILE_NAME, resources.DURATION_WATCH_CONFIG, isModifyConfig)
 
 	c := commands.NewCommander(bot, conf)
+	defer c.Stop()
+
+	signal.Notify(chSignal, os.Interrupt, os.Kill)
+	go func() {
+		<-chSignal
+		c.Stop()
+		log.Fatal("Cancel bot by OS interruption.")
+	}()
+
 	c.Start()
 }

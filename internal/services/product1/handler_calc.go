@@ -36,7 +36,7 @@ func NewHandlerCalc(ins *Insurance, bot *tgapi.BotAPI, ses *sessions.Session, up
 }
 
 func (h *HandlerCalc) Execute() {
-	defer log.Println("session after Execute", h.Ses)
+	//defer log.Println("session after Execute", h.Ses)
 	err := requestsListCalc[h.Ses.IdxRequest].worker(h, h.Update.Message)
 	var m tgapi.Message
 	if err != nil {
@@ -49,9 +49,9 @@ func (h *HandlerCalc) Execute() {
 			//h.Sessions.UpdateSession(h.Update.Message.Chat.ID, ses)
 			return
 		}
-		log.Printf("error HandlerCalc: Idx=%v %v", h.Ses.IdxRequest, err)
+		log.Printf("error HandlerCalc: Idx=%v. %v\n", h.Ses.IdxRequest, err)
 		if h.Ses.LastRequestIsError {
-			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, resources.WRONG_AGAIN+requestsListCalc[h.Ses.IdxRequest].wrong_text))
+			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, resources.WRONG_AGAIN+" "+requestsListCalc[h.Ses.IdxRequest].wrong_text))
 		} else {
 			m, _ = h.Bot.Send(tgapi.NewMessage(h.Update.Message.Chat.ID, requestsListCalc[h.Ses.IdxRequest].wrong_text))
 		}
@@ -76,8 +76,6 @@ func (h *HandlerCalc) Execute() {
 	}
 	h.Ses.LastMessageID = m.MessageID
 	h.Ses.LastRequestIsError = false
-
-	//h.Sessions.UpdateSession(h.Update.Message.Chat.ID, ses)
 }
 
 func (h *HandlerCalc) ExecuteCallback() {

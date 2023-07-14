@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
@@ -81,12 +82,23 @@ func (r *HandlerCalc) Get_yes_no(callbackData string) (string, error) {
 		r.ins.EventInLast5Year = true
 	}
 
-	sum, err := (*r).ins.Calculate()
+	sum, err := r.Calculate()
 	if err != nil {
 		return "", err
 	}
 
 	str := fmt.Sprintf(resources.TXT_FINISH, sum)
+	return str, nil
+}
+
+func (r *HandlerCalc) Calculate() (string, error) {
+	sum := 70000.0
+	bonus := 23000.0
+
+	//TODO calculate sum
+	log.Println("Calculate 5 sec ...")
+	time.Sleep(1 * time.Second)
+	var str string = fmt.Sprintf("Сумма страховки: *%.2f тенге*\nВаша скидка: *%.2f тенге*", sum, bonus)
 	return str, nil
 }
 

@@ -6,10 +6,11 @@ const (
 	CONFIG_FILE_NAME       string        = "bot.cfg"
 	FILES_ID               string        = "resources/files_id.json"
 	TYPE_OF_BUSNS_FILENAME string        = "resources/vid.txt"
+	CLIENT_FILES_INDEX     string        = "resourses/receiver_ind.json"
+	CLIENT_FILES_FOLDER    string        = "receive"
 	DURATION_WATCH_CONFIG  time.Duration = 3 * time.Second
 
-	WRONG_ACCESS string = "Извините, пока доступ закрыт."
-	START        string = `Уважаемый предприниматель!
+	START string = `Уважаемый предприниматель!
 Наш бот предлагает услуги менеджера Государственной Аннуитетной Компании в г. Петропавловск (Казахстан).
 Он поможет Вам расчитать стоимость Обязательного страхования работника от несчастного случая (ОСНС).
 Вы можете так же отправить сканы документов менеджеру для расчета. После чего менеджер сообщит вам результат.
@@ -31,8 +32,8 @@ const (
 
 	HELP string = `Команды Вы можете набрать с помощью клавиатуры или выбрать в меню.
 `
-	ABOUT       string = "100% государственная компания. Единственным акционером АО \"КСЖ ГАК\" является государство в лице Правительства Республики Казахстан."
-	VIDEO_ABOUT string = "resources\\status.mp4"
+	ABOUT       string = "О компании.\n100% государственная компания. Единственным акционером АО \"КСЖ ГАК\" является государство в лице Правительства Республики Казахстан."
+	VIDEO_ABOUT string = "resources/status.mp4"
 	TXT_BIN     string = "Ваш БИН или ИИН."
 	TXT         string = `Расчет страховой суммы, страховой премии.
 `
@@ -49,16 +50,21 @@ const (
 	// _ГФОТ работников с окладом >10 МЗП:_ *%v*
 	// _Работники с ежемесячым окладом <=10 МЗП:_ *%v*
 	// _ГФОТ работников с окладом <=10 МЗП:_ *%v*
+	TXT_LAST5YEAR string = `Были ли страховые случаи за последние 5 лет?`
 	WRONG_1DIGIT  string = "Введите одно число."
 	WRONG_5SIGN   string = "Введите одно 5-значное число."
 	WRONG_BIN     string = "ИИН или БИН введен не корректно."
 	WRONG_AGAIN   string = `Опять ошибка. `
-	TXT_LAST5YEAR string = `Были ли страховые случаи за последние 5 лет?`
 	WRONG_CALC    string = `Произошла ошибка при расчете. Проверьте введённые данные и порпобуйте повторить расчет сначала.`
 
-	YES string = "Да"
-	NO  string = "Нет"
+	WRONG_INPUT  string = `Введите команду или выберите её из меню.`
+	WRONG_ACCESS string = "Извините, пока доступ закрыт."
 
+	YES                 string = "Да"
+	NO                  string = "Нет"
 	URL                 string = "https://old.stat.gov.kz/api/juridical/counter/api/" //?bin=840629300619&lang=ru"
 	WRONG_BIN_NOT_FOUND string = "ИИН или БИН не найден (не зарегистрирован в госорганах)."
+	WRONG_GET_FILES     string = "Прикрепите к вашему сообщению файл документ или изображения."
+	WRONG_SAVE_FILES    string = "Произошел сбой при сохранении данных. Попробуйте отправить снова."
+	TXT_GET_FILES       string = "Ваши файлы сохранены и будут отправлены менеджеру."
 )
