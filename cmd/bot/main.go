@@ -80,7 +80,8 @@ func main() {
 	go func() {
 		<-chSignal
 		c.Stop()
-		log.Fatal("Cancel bot by OS interruption.")
+		log.Println("Cancel bot by OS interruption.")
+		os.Exit(1)
 	}()
 
 	c.Start()
