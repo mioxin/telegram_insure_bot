@@ -11,19 +11,15 @@ import (
 	"time"
 )
 
-type pair struct {
-	k, v string
-}
-
 // HttpHelper предоставляет удобный интерфейс
 // для выполнения HTTP-запросов
 type HttpHelper struct {
 	client       *http.Client
 	req          *http.Request
 	uri          string
-	cookies      []pair
-	headers      []pair
-	params, form []pair
+	cookies      map[string]string
+	headers      map[string]string
+	params, form map[string]string
 }
 
 // NewHttpHelper создает новый экземпляр HttpHelper
@@ -34,13 +30,13 @@ func NewHttpHelper() *HttpHelper {
 	transport.GetProxyConnectHeader = func(ctx context.Context, proxyURL *url.URL, target string) (http.Header, error) {
 		return http.Header{"User-Agent": []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"}}, nil
 	}
+	//transport.DialContext =
 	cl := http.Client{
-		Timeout:   time.Duration(3 * time.Second),
+		Timeout:   time.Duration(5 * time.Second),
 		Transport: transport,
 	}
 	uri := ""
-	cook, head, param := []pair{}, []pair{}, []pair{}
-	return &HttpHelper{&cl, nil, uri, cook, head, param, []pair{}}
+	return &HttpHelper{&cl, nil, uri, make(map[string]string), make(map[string]string), make(map[string]string), make(map[string]string)}
 }
 
 // URL устанавливает URL, на который пойдет запрос
@@ -58,19 +54,19 @@ func (h *HttpHelper) Client(cl *http.Client) *HttpHelper {
 
 // Header устанавливает значение заголовка
 func (h *HttpHelper) Header(key, value string) *HttpHelper {
-	h.headers = append(h.headers, pair{key, value})
+	h.headers[key] = value
 	return h
 }
 
 // Header устанавливает значение заголовка
 func (h *HttpHelper) Cookies(key, value string) *HttpHelper {
-	h.cookies = append(h.cookies, pair{key, value})
+	h.cookies[key] = value
 	return h
 }
 
 // Param устанавливает значение URL-параметра
 func (h *HttpHelper) Param(key, value string) *HttpHelper {
-	h.params = append(h.params, pair{key, value})
+	h.params[key] = value
 	return h
 }
 
@@ -79,7 +75,7 @@ func (h *HttpHelper) Param(key, value string) *HttpHelper {
 // с соответствующим content-type
 func (h *HttpHelper) Form(form map[string]string) *HttpHelper {
 	for k, v := range form {
-		h.form = append(h.form, pair{k, v})
+		h.form[k] = v
 	}
 	return h
 }
@@ -110,19 +106,19 @@ func (h *HttpHelper) Get() *HttpHelperResponse {
 		return &HttpHelperResponse{0, "", err, nil}
 	}
 	p := url.Values{}
-	for _, par := range h.params {
-		p.Add(par.k, par.v)
+	for k, v := range h.params {
+		p.Add(k, v)
 	}
 	h.req.URL.RawQuery = p.Encode()
-	for _, hd := range h.headers {
-		h.req.Header.Add(hd.k, hd.v)
+	for k, v := range h.headers {
+		h.req.Header.Add(k, v)
 	}
 	resp, err := h.client.Do(h.req)
 
 	if err != nil {
-		return &HttpHelperResponse{0, "", err, resp}
+		return &HttpHelperResponse{0, "", err, nil}
 	} else {
-		return &HttpHelperResponse{resp.StatusCode, resp.Status, nil, resp}
+		return NewHttpHelperResponse(resp)
 	}
 }
 
@@ -130,20 +126,20 @@ func (h *HttpHelper) Get() *HttpHelperResponse {
 func (h *HttpHelper) Post() *HttpHelperResponse {
 	if h.form != nil {
 		f := url.Values{}
-		for _, par := range h.form {
-			f.Add(par.k, par.v)
+		for k, v := range h.form {
+			f.Add(k, v)
 		}
 		if resp, err := h.client.PostForm(h.uri, f); err != nil {
-			return &HttpHelperResponse{0, "", err, resp}
+			return &HttpHelperResponse{0, "", err, nil}
 		} else {
-			return &HttpHelperResponse{resp.StatusCode, resp.Status, nil, resp}
+			return NewHttpHelperResponse(resp)
 		}
 	} else {
 		resp, err := h.client.Do(h.req)
 		if err != nil {
-			return &HttpHelperResponse{0, "", err, resp}
+			return &HttpHelperResponse{0, "", err, nil}
 		} else {
-			return &HttpHelperResponse{resp.StatusCode, resp.Status, nil, resp}
+			return NewHttpHelperResponse(resp)
 		}
 
 	}
@@ -154,7 +150,17 @@ type HttpHelperResponse struct {
 	StatusCode int
 	Status     string
 	err        error
-	response   *http.Response
+	response   []byte
+	//response   *http.Response
+}
+
+func NewHttpHelperResponse(rsp *http.Response) *HttpHelperResponse {
+	b, err := io.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return &HttpHelperResponse{0, "", err, nil}
+	}
+	return &HttpHelperResponse{rsp.StatusCode, rsp.Status, nil, b}
 }
 
 // OK возвращает true, если во время выполнения запроса
@@ -163,30 +169,18 @@ func (r *HttpHelperResponse) OK() bool {
 	if r.StatusCode >= 200 && r.StatusCode <= 302 {
 		return true
 	}
-	r.err = fmt.Errorf("HttpHelperResponse.OK: error request %v, %v", r.response.Request.URL.String(), r.Status)
+	r.err = fmt.Errorf("HttpHelperResponse.OK: error request %v", r.Status)
 	return false
 }
 
 // Bytes возвращает тело ответа как срез байт
 func (r *HttpHelperResponse) Bytes() []byte {
-	if b, err := io.ReadAll(r.response.Body); err == nil {
-		defer r.response.Body.Close()
-		return b
-	} else {
-		r.err = err
-	}
-	return []byte{}
+	return r.response
 }
 
 // String возвращает тело ответа как строку
 func (r *HttpHelperResponse) String() string {
-	if b, err := io.ReadAll(r.response.Body); err != nil {
-		r.err = err
-		return ""
-	} else {
-		defer r.response.Body.Close()
-		return string(b)
-	}
+	return string(r.response)
 }
 
 // JSON декодирует тело ответа из JSON и сохраняет
@@ -197,7 +191,8 @@ func (r *HttpHelperResponse) JSON(v any) {
 	// она должна быть доступна через r.Err()
 
 	//log.Println("htmlHelper: valid ", json.Valid(r.Bytes()))
-	rb := r.Bytes()
+	r.err = nil
+	rb := r.response
 	if json.Valid(rb) {
 		if err := json.Unmarshal(rb, v); err != nil {
 			r.err = err

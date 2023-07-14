@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -44,7 +45,7 @@ func (mses *MemSessions) AddSession(id int64, ses *Session) {
 	mses.sessions[id] = *ses
 }
 
-func (mses MemSessions) GetIdsByUser(user string) []int64 {
+func (mses *MemSessions) GetIdsByUser(user string) []int64 {
 	aId := make([]int64, 0)
 	mses.mtx.Lock()
 	defer mses.mtx.Unlock()
@@ -55,4 +56,9 @@ func (mses MemSessions) GetIdsByUser(user string) []int64 {
 		}
 	}
 	return aId
+}
+
+func (mses *MemSessions) Close() {
+	log.Printf("End Close MemSessions.\n")
+
 }

@@ -18,6 +18,7 @@ type Config struct {
 	AccWord string
 	Deny    map[string]struct{}
 	Allow   map[string]struct{}
+	Admins  map[string]struct{}
 	ModTime time.Time
 }
 
@@ -40,11 +41,23 @@ func NewConfig(configName string) (*Config, error) {
 
 	return config, err
 }
+func str_map(s string) map[string]struct{} {
+	m := make(map[string]struct{})
+	if strings.TrimSpace(s) != "" {
+		arr_str := strings.Split(strings.ToLower(s), ",")
+		for _, d := range arr_str {
+			m[strings.TrimSpace(d)] = struct{}{}
+		}
+	}
+	return m
+}
 
 func ParseConfigFile(config_file io.Reader) (*Config, error) {
 	var token, logFile, acc_word string
 	deny := make(map[string]struct{})
 	allow := make(map[string]struct{})
+	adm := make(map[string]struct{})
+
 	in := bufio.NewReader(config_file)
 	for {
 		str, err := in.ReadString('\n')
@@ -67,15 +80,11 @@ func ParseConfigFile(config_file io.Reader) (*Config, error) {
 		case "log_file":
 			logFile = strings.TrimSpace(arr_str[1])
 		case "deny":
-			arr_deny := strings.Split(strings.ToLower(arr_str[1]), ",")
-			for _, d := range arr_deny {
-				deny[strings.TrimSpace(d)] = struct{}{}
-			}
+			deny = str_map(strings.ToLower(arr_str[1]))
 		case "allow":
-			arr_allow := strings.Split(strings.ToLower(arr_str[1]), ",")
-			for _, d := range arr_allow {
-				allow[strings.TrimSpace(d)] = struct{}{}
-			}
+			allow = str_map(strings.ToLower(arr_str[1]))
+		case "admins":
+			adm = str_map(strings.ToLower(arr_str[1]))
 		case "acc_word":
 			acc_word = strings.TrimSpace(arr_str[1])
 
@@ -87,7 +96,7 @@ func ParseConfigFile(config_file io.Reader) (*Config, error) {
 		logFile = DEFAULT_LOG_FILE
 	}
 
-	return &Config{Token: token, LogFile: logFile, Deny: deny, Allow: allow, AccWord: acc_word}, nil
+	return &Config{Token: token, LogFile: logFile, Deny: deny, Allow: allow, Admins: adm, AccWord: acc_word}, nil
 }
 
 func (conf *Config) IsAccess(user string) bool {
@@ -137,4 +146,10 @@ func (conf *Config) Watch(configFile string, watchTime time.Duration, ok chan an
 }
 
 func (conf *Config) Close() {
+	log.Printf("End Close Config.\n")
+
+}
+
+func (conf *Config) IsAccWord(str string) bool {
+	return conf.AccWord == str
 }

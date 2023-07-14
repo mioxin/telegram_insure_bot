@@ -6,6 +6,6 @@ import (
 )
 
 type IService interface {
-	Calculate() (string, error)
+	//Calculate() (string, error)
 	Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.Update)
 }
