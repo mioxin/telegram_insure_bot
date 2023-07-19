@@ -2,17 +2,21 @@ package commands
 
 import (
 	"log"
+	"os"
 	"runtime/debug"
 	"strings"
 	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mrmioxin/gak_telegram_bot/internal/config"
 	"github.com/mrmioxin/gak_telegram_bot/internal/handlers"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
-	srv_cfls "github.com/mrmioxin/gak_telegram_bot/internal/services/clientfiles"
+	"github.com/mrmioxin/gak_telegram_bot/internal/services/getclientfiles"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services/product1"
+	srv_cfls "github.com/mrmioxin/gak_telegram_bot/internal/services/receive_client_files"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/clientfiles"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
 type IHandler interface {
@@ -20,16 +24,19 @@ type IHandler interface {
 }
 
 type IFilesStorage interface {
-	GetFileId(name string) (string, error)
+	GetFileId(user, name string) (string, error)
 	SetFileId(name, user, id string) error
+	ListUsers() []string
+	// ListFiles(user string) []*storages.FileInfo
 	Close()
 }
 
-type IConfig interface {
-	IsAccess(user string) bool
-	IsAccWord(word string) bool
-	Close()
-}
+//	type IConfig interface {
+//		IsAdmin(user string) bool
+//		IsAccess(user string) bool
+//		IsAccWord(word string) bool
+//		Close()
+//	}
 type ISessions interface {
 	GetSession(id int64) (*sessions.Session, error)
 	GetIdsByUser(user string) []int64
@@ -39,27 +46,34 @@ type ISessions interface {
 }
 type Commander struct {
 	bot      *tgapi.BotAPI
-	Config   IConfig
+	Config   *config.Config
 	Products map[string]services.IService
 	Sessions ISessions
 	Files    IFilesStorage
-	// done     chan struct{}
+	// newConf  chan any
 }
 
-func NewCommander(bot *tgapi.BotAPI, conf IConfig) *Commander {
+func NewCommander(bot *tgapi.BotAPI, conf *config.Config) *Commander {
 	prods := make(map[string]services.IService)
 	files := clientfiles.NewMapStorage()
 
-	prods["calc"] = product1.NewInsurence("ОСНС") //processing of calc command (get data and colculate the cost of osns Insurance)
-	prods["send"] = srv_cfls.NewReceiver(files)   //receive and store a files was send to bot from users
+	prods["calc"] = product1.NewInsurence("ОСНС")  //processing of calc command (get data and colculate the cost of osns Insurance)
+	prods["send"] = srv_cfls.NewReceiver(files)    //receive and store a files was send to bot from users
+	prods["get"] = getclientfiles.NewGetter(files) //get client files that was sended to bot from users from the store
 
 	s := sessions.NewMemSessions()
 	// done := make(chan struct{})
-
 	return &Commander{bot, conf, prods, s, files}
 }
 
 func (cmder *Commander) Start() {
+	go func() {
+		for range cmder.Watch(resources.CONFIG_FILE_NAME, resources.DURATION_WATCH_CONFIG) {
+			cmder.Config.Update(resources.CONFIG_FILE_NAME)
+			log.Printf("Update config")
+		}
+	}()
+
 	u := tgapi.NewUpdate(0)
 	u.Timeout = 60
 
@@ -91,25 +105,17 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 
 	switch {
 	case update.CallbackQuery != nil:
-		log.Printf("CallbackQuery in HandlerMain: %v", update.CallbackQuery)
+		log.Printf("CallbackQuery in HandlerMain: %#v", update.CallbackQuery)
 		chatID = update.CallbackQuery.Message.Chat.ID
 		ses, _ = cmder.Sessions.GetSession(chatID)
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 
 	case update.Message.IsCommand():
-		log.Printf("Command in HandlerMain: %#v", update.Message)
+		log.Printf("Command in HandlerMain: %#v", update.Message.Command())
 		ses = sessions.NewSession(update.Message.Chat.UserName)
 
-		if cmder.Config.IsAccess(update.Message.Chat.UserName) {
-			ses.AccessCommand["all"] = struct{}{}
-		} else if update.Message.CommandArguments() != "" {
-			s := strings.Split(update.Message.CommandArguments(), " ")
-			if cmder.Config.IsAccWord(strings.TrimSpace(s[0])) {
-				ses.AccessCommand[update.Message.Command()] = struct{}{}
-			}
-		} else {
-			ses.AccessCommand["about"] = struct{}{}
-		}
+		cmder.setAvailableCommands(ses, update.Message)
+
 		chatID = update.Message.Chat.ID
 		cmder.Sessions.AddSession(chatID, ses)
 		h = handlers.NewHandlerCommand(cmder.bot, cmder.Files, ses, update)
@@ -133,6 +139,26 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 	return nil
 }
 
+func (cmder *Commander) setAvailableCommands(ses *sessions.Session, msg *tgapi.Message) {
+	ses.AccessCommand["about"] = struct{}{}
+
+	if cmder.Config.IsAdmin(msg.Chat.UserName) {
+		ses.AccessCommand["adm"] = struct{}{}
+		return
+	}
+
+	if cmder.Config.IsAccess(msg.Chat.UserName) {
+		ses.AccessCommand["all"] = struct{}{}
+	}
+
+	if msg.CommandArguments() != "" {
+		s := strings.Split(msg.CommandArguments(), " ")
+		if cmder.Config.IsAccWord(strings.TrimSpace(s[0])) {
+			ses.AccessCommand[msg.Command()] = struct{}{}
+		}
+	}
+}
+
 func (cmder *Commander) Stop() {
 	cmder.Sessions.Close()
 	cmder.Config.Close()
@@ -140,4 +166,23 @@ func (cmder *Commander) Stop() {
 	cmder.bot.StopReceivingUpdates()
 	log.Println("Commander stoped.")
 
+}
+
+func (cmder *Commander) Watch(configFile string, watchTime time.Duration) chan any {
+	ok := make(chan any)
+	go func() {
+		for {
+			if flInfo, err := os.Stat(configFile); err != nil {
+				log.Printf("error in conf.Watch: error get FileInfo for  %v.", configFile)
+
+				time.Sleep(watchTime)
+				continue
+			} else if flInfo.ModTime() != cmder.Config.ModTime {
+				log.Printf("Config file %v was modify.", configFile)
+				ok <- struct{}{}
+			}
+			time.Sleep(watchTime)
+		}
+	}()
+	return ok
 }

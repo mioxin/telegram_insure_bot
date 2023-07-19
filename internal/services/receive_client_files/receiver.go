@@ -1,4 +1,4 @@
-package clientfiles
+package receive_client_files
 
 import (
 	"log"
@@ -11,7 +11,7 @@ import (
 )
 
 type IFileStorage interface {
-	GetFileId(name string) (string, error)
+	GetFileId(name, user string) (string, error)
 	SetFileId(name, user, id string) error
 }
 
@@ -28,12 +28,12 @@ func (r *Recever) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi
 	var err error
 	switch { //expected doc or img
 	case update.Message.Photo != nil || update.Message.Document != nil:
+		ses.LastRequestIsError = false
 		if msg, err = r.saveFile(ses, update); err != nil {
 			log.Printf("error in Receiver Execute: %v\n", err)
 			ses.LastRequestIsError = true
-		} else {
-			ses.LastRequestIsError = false
 		}
+		ses.ActionName = ""
 	default: //not doc or img
 		log.Printf("error in Receiver Execute: expected attached a doc or img files\n")
 		if ses.LastRequestIsError { //error was been in last time
