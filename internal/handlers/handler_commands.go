@@ -9,8 +9,9 @@ import (
 )
 
 type IFilesID interface {
-	GetFileId(name string) (string, error)
+	GetFileId(name, user string) (string, error)
 	SetFileId(name, user, id string) error
+	ListUsers() []string
 }
 
 type HandlerCommands struct {
@@ -33,14 +34,23 @@ func NewHandlerCommand(bot *tgapi.BotAPI, files_id IFilesID, ses *sessions.Sessi
 
 func (h *HandlerCommands) Execute() {
 	if command, ok := registered_commands[h.Update.Message.Command()]; ok {
-		_, okAll := h.Ses.AccessCommand["all"]
-		_, okCmd := h.Ses.AccessCommand[h.Update.Message.Command()]
-		if okAll || okCmd {
+		if _, ok := h.Ses.AccessCommand["adm"]; ok {
 			h.Ses.ActionName, h.Ses.LastMessageID = command.Worker(h, h.Update.Message)
-		} else {
-			msg := tgapi.NewMessage(h.Update.Message.Chat.ID, resources.WRONG_ACCESS)
-			h.Bot.Send(msg)
-			log.Printf("HandlerCommand: deny acces fo @%s on /%s\n", h.Update.Message.Chat.UserName, h.Update.Message.Command())
+			return
 		}
+
+		if _, ok := h.Ses.AccessCommand["all"]; ok && !command.Adm {
+			h.Ses.ActionName, h.Ses.LastMessageID = command.Worker(h, h.Update.Message)
+			return
+		}
+
+		if _, ok := h.Ses.AccessCommand[h.Update.Message.Command()]; ok {
+			h.Ses.ActionName, h.Ses.LastMessageID = command.Worker(h, h.Update.Message)
+			return
+		}
+
+		msg := tgapi.NewMessage(h.Update.Message.Chat.ID, resources.WRONG_ACCESS)
+		h.Bot.Send(msg)
+		log.Printf("HandlerCommand: deny acces fo @%s on /%s\n", h.Update.Message.Chat.UserName, h.Update.Message.Command())
 	}
 }

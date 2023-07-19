@@ -70,10 +70,10 @@ func main() {
 	log.Printf("Authorized on account %s\n", bot.Self.UserName)
 	chSignal := make(chan os.Signal)
 
-	isModifyConfig := make(chan any)
-	go conf.Watch(resources.CONFIG_FILE_NAME, resources.DURATION_WATCH_CONFIG, isModifyConfig)
+	// isModifyConfig := make(chan any)
+	// go conf.Watch(resources.CONFIG_FILE_NAME, resources.DURATION_WATCH_CONFIG, isModifyConfig)
 
-	c := commands.NewCommander(bot, conf)
+	c := commands.NewCommander(bot, conf) //, isModifyConfig)
 	defer c.Stop()
 
 	signal.Notify(chSignal, os.Interrupt, os.Kill)
