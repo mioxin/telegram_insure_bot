@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -14,6 +15,7 @@ import (
 )
 
 var (
+	help              bool
 	verbouse          bool
 	debug             bool
 	token, configFile string
@@ -26,15 +28,16 @@ func init() {
 	flag.BoolVar(&debug, "d", false, "Output debug info to StdOut (shorthand)")
 	flag.StringVar(&token, "t", "", "The security token for connecting to Telegram API")
 	flag.StringVar(&configFile, "c", "", "The configuration file")
-	// registers.Sessions = *sessions.NewMemSessions()
-	// registers.RegisteredCommands = make(map[string]func(mes *tgapi.Message) string)
-	// registers.RegisteredActions = make(map[string]actions.Action)
-
+	flag.BoolVar(&help, "h", false, "Show help (shorthand)")
+	flag.BoolVar(&help, "help", false, "Show help")
 }
 
 func parsConf() {
 	var err error
 	flag.Parse()
+	if help {
+		showHelp()
+	}
 
 	if configFile == "" {
 		configFile = resources.CONFIG_FILE_NAME
@@ -46,6 +49,8 @@ func parsConf() {
 
 	if token != "" {
 		conf.Token = token
+	} else if conf.Token == "" {
+		showHelp()
 	}
 
 	if !verbouse {
@@ -55,6 +60,17 @@ func parsConf() {
 		}
 		log.SetOutput(output_log)
 	}
+}
+func showHelp() {
+	fmt.Printf("gak_telegram_bot.\n(C)2023 mrmioxin@gmail.com\nTelegramm bot that help to conclude an insurance contract for employees by an employer.")
+	flag.VisitAll(func(f *flag.Flag) {
+		if f.DefValue == "" {
+			fmt.Printf("\t-%s: %s\n", f.Name, f.Usage)
+		} else {
+			fmt.Printf("\t-%s: %s (Default: %s)\n", f.Name, f.Usage, f.DefValue)
+		}
+	})
+	os.Exit(0)
 }
 
 func main() {
