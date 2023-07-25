@@ -68,8 +68,8 @@ func NewCommander(bot *tgapi.BotAPI, conf *config.Config) *Commander {
 
 func (cmder *Commander) Start() {
 	go func() {
-		for range cmder.Watch(resources.CONFIG_FILE_NAME, resources.DURATION_WATCH_CONFIG) {
-			cmder.Config.Update(resources.CONFIG_FILE_NAME)
+		for range cmder.Watch(resources.DURATION_WATCH_CONFIG) {
+			cmder.Config.Update()
 			log.Printf("Update config")
 		}
 	}()
@@ -168,20 +168,19 @@ func (cmder *Commander) Stop() {
 
 }
 
-func (cmder *Commander) Watch(configFile string, watchTime time.Duration) chan any {
+func (cmder *Commander) Watch(watchTime time.Duration) chan any {
 	ok := make(chan any)
+	configFile := cmder.Config.ConfFile
 	go func() {
+		ticker := time.NewTicker(watchTime)
 		for {
+			<-ticker.C
 			if flInfo, err := os.Stat(configFile); err != nil {
 				log.Printf("error in conf.Watch: error get FileInfo for  %v.", configFile)
-
-				time.Sleep(watchTime)
-				continue
 			} else if flInfo.ModTime() != cmder.Config.ModTime {
 				log.Printf("Config file %v was modify.", configFile)
 				ok <- struct{}{}
 			}
-			time.Sleep(watchTime)
 		}
 	}()
 	return ok

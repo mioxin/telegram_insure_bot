@@ -3,6 +3,7 @@ package resources
 import "time"
 
 const (
+	DEFAULT_LOG_FILE       string        = "bot.log"
 	CONFIG_FILE_NAME       string        = "bot.cfg"
 	FILES_ID               string        = "resources/files_id.json"
 	TYPE_OF_BUSNS_FILENAME string        = "resources/vid.txt"

@@ -8,18 +8,19 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
-const DEFAULT_LOG_FILE string = "bot.log"
-
 type Config struct {
-	Token   string
-	LogFile string
-	AccWord string
-	Deny    map[string]struct{}
-	Allow   map[string]struct{}
-	Admins  map[string]struct{}
-	ModTime time.Time
+	Token    string
+	LogFile  string
+	ConfFile string
+	AccWord  string
+	Deny     map[string]struct{}
+	Allow    map[string]struct{}
+	Admins   map[string]struct{}
+	ModTime  time.Time
 }
 
 func NewConfig(configName string) (*Config, error) {
@@ -38,6 +39,8 @@ func NewConfig(configName string) (*Config, error) {
 	} else {
 		config.ModTime = flInfo.ModTime()
 	}
+
+	config.ConfFile = configName
 
 	return &config, err
 }
@@ -94,26 +97,29 @@ func ParseConfigFile(config_file io.Reader) (Config, error) {
 		}
 	}
 	if logFile == "" {
-		logFile = DEFAULT_LOG_FILE
+		logFile = resources.DEFAULT_LOG_FILE
 	}
 
 	return Config{Token: token, LogFile: logFile, Deny: deny, Allow: allow, Admins: adm, AccWord: acc_word}, nil
 }
 
-func (conf *Config) Update(configName string) {
+func (conf *Config) Update() {
 	// var err error
-	configFile, err := os.ReadFile(configName)
+	configFile, err := os.ReadFile(conf.ConfFile)
 	if err != nil {
-		log.Printf("error in Update config: %#v\n%#v", err, conf)
+		log.Printf("error in Update config: %#v\n%#v\n", err, conf)
 	}
 	c, err := ParseConfigFile(strings.NewReader(string(configFile)))
 	if err != nil {
-		log.Printf("error in Update config: %#v\n%#v", err, conf)
+		log.Printf("error in Update config: %#v\n%#v\n", err, conf)
+	}
+	if c.ConfFile == "" {
+		c.ConfFile = conf.ConfFile
 	}
 	*conf = c
 
-	if flInfo, err := os.Stat(configName); err != nil {
-		log.Printf("error in Update config: %#v\n%#v", err, conf)
+	if flInfo, err := os.Stat(conf.ConfFile); err != nil {
+		log.Printf("error in Update config: %#v\n%#v\n", err, conf)
 	} else {
 		conf.ModTime = flInfo.ModTime()
 	}
