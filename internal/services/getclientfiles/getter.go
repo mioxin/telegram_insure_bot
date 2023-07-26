@@ -52,6 +52,9 @@ func (g *Getter) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.
 			f := strings.Split(arr[1], ";")
 			fileID, _ := g.FileStore.GetFileId(f[0], f[1])
 			mId, _ = g.UploadFile(bot, fileID, chatId)
+			if err != nil {
+				log.Printf("error getter Execute: %s", err)
+			}
 		default:
 		}
 	}
@@ -72,6 +75,7 @@ func (g *Getter) UploadListFiles(bot *tgapi.BotAPI, user string, chatId int64) (
 
 	m, err := bot.Send(msg)
 	if err != nil {
+		log.Printf("getter UploadListFile: buttons: %#v", buttons)
 		return 0, err
 	}
 	return m.MessageID, nil
@@ -80,10 +84,16 @@ func (g *Getter) UploadListFiles(bot *tgapi.BotAPI, user string, chatId int64) (
 func (g *Getter) UploadFile(bot *tgapi.BotAPI, fileID string, chatId int64) (int, error) {
 	log.Printf("getter UploadFile: id: %s", fileID)
 
-	msg := tgapi.NewDocumentShare(chatId, fileID)
-	m, err := bot.Send(msg)
-	if err != nil {
-		return 0, err
+	m, err := bot.Send(tgapi.NewDocumentShare(chatId, fileID))
+
+	if err != nil { // file isnt document
+		log.Printf("error getter UploadFile: %s, chat ID:%v fileID:%v", err, chatId, fileID)
+
+		m, err = bot.Send(tgapi.NewPhotoShare(chatId, fileID))
+		if err != nil {
+			log.Printf("error getter UploadFile: %s, chat ID:%v fileID:%v", err, chatId, fileID)
+			return 0, err
+		}
 	}
 	return m.MessageID, nil
 
