@@ -32,16 +32,21 @@ var (
 )
 
 func NewHandlerCalc(ins *Insurance, bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.Update) *HandlerCalc {
-	return &HandlerCalc{ins, handlers.Handler{Bot: bot, Ses: ses, Update: update}}
+	user := update.Message.Chat.UserName
+	if user == "" {
+		user = update.CallbackQuery.Message.Chat.UserName
+	}
+
+	return &HandlerCalc{ins, handlers.Handler{Bot: bot, Ses: ses, Update: update, User: user}}
 }
 
 func (h *HandlerCalc) Execute() {
-	//defer log.Println("session after Execute", h.Ses)
+	// defer log.Println("[%s]session after Execute", h.Ses)
 	err := requestsListCalc[h.Ses.IdxRequest].worker(h, h.Update.Message)
 	var m tgapi.Message
 	if err != nil {
 		if err, ok := err.(ErrorBinIinNotFound); ok {
-			log.Printf("HandlerCalc: idx=%v. %v\n", h.Ses.IdxRequest, err)
+			log.Printf("[%s] HandlerCalc: idx=%v. %v\n", h.User, h.Ses.IdxRequest, err)
 			mes := tgapi.NewMessage(h.Update.Message.Chat.ID, resources.TXT_VID)
 			m, _ = h.Bot.Send(mes)
 			h.Ses.IdxRequest++
@@ -49,7 +54,7 @@ func (h *HandlerCalc) Execute() {
 			//h.Sessions.UpdateSession(h.Update.Message.Chat.ID, ses)
 			return
 		}
-		log.Printf("error HandlerCalc: Idx=%v. %v\n", h.Ses.IdxRequest, err)
+		log.Printf("[%s] error HandlerCalc: Idx=%v. %v\n", h.User, h.Ses.IdxRequest, err)
 		if h.Ses.LastRequestIsError {
 			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, resources.WRONG_AGAIN+" "+requestsListCalc[h.Ses.IdxRequest].wrong_text))
 		} else {
@@ -57,7 +62,7 @@ func (h *HandlerCalc) Execute() {
 		}
 		h.Ses.LastRequestIsError = true
 	} else {
-		//log.Println("HandlerCalc: idx=", h.Ses.IdxRequest)
+		// log.Println("[%s]HandlerCalc: idx=", h.Ses.IdxRequest)
 		mes := tgapi.NewMessage(h.Update.Message.Chat.ID, requestsListCalc[h.Ses.IdxRequest].ok_text)
 		mes.ParseMode = "Markdown"
 		switch h.Ses.IdxRequest {
@@ -72,17 +77,19 @@ func (h *HandlerCalc) Execute() {
 		default:
 		}
 		m, _ = h.Bot.Send(mes)
-		h.Ses.IdxRequest++
+		if h.Ses.IdxRequest < len(requestsListCalc)-1 {
+			h.Ses.IdxRequest++
+		}
 	}
 	h.Ses.LastMessageID = m.MessageID
 	h.Ses.LastRequestIsError = false
 }
 
 func (h *HandlerCalc) ExecuteCallback() {
-	log.Println("HandlerCallback: start calc update:", h.Update)
+	log.Printf("[%s] HandlerCallback: start calc update: %#v\n", h.User, h.Update)
 	callbackData := strings.Split(h.Update.CallbackQuery.Data, " ")
 	editText := ""
-	log.Println("HandlerCallback: start calc callback Data:", callbackData[1])
+	log.Printf("[%s] HandlerCallback: start calc callback Data: %v\n", h.User, callbackData[1])
 	if callbackData[1] == "yes" {
 		editText = resources.TXT_LAST5YEAR + " *" + resources.YES + "*\n\n"
 	} else {
@@ -94,7 +101,7 @@ func (h *HandlerCalc) ExecuteCallback() {
 	//h.Get_yes_no(callbackData[1])
 
 	if txt, err := h.Get_yes_no(callbackData[1]); err != nil {
-		log.Println("error HandlerCallback: err calc:", resources.WRONG_CALC, err)
+		log.Printf("[%s] error HandlerCallback: %v, %v\n", h.User, resources.WRONG_CALC, err)
 		editText = txt + resources.WRONG_CALC
 	} else {
 		editText = txt

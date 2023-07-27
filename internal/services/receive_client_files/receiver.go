@@ -68,14 +68,6 @@ func (r *Recever) saveFile(ses *sessions.Session, update tgapi.Update) (tgapi.Ch
 		fileId = update.Message.Document.FileID
 	default:
 	}
-	//create dir "receive/username/" for download a user file if need it in future.
-	// _, err = os.ReadDir(filepath.Join(resources.CLIENT_FILES_FOLDER, userName))
-	// if os.IsNotExist(err) { //dir not exist
-	// 	os.Mkdir(filepath.Join(resources.CLIENT_FILES_FOLDER, userName), 0755)
-	// } else if err != nil {
-	// 	strMsg = resources.WRONG_SAVE_FILES
-	// }
-
 	//save file info to map & json
 	r.FileStore.SetFileId(fileName, userName, fileId)
 

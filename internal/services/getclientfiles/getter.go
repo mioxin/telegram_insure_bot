@@ -65,13 +65,13 @@ func (g *Getter) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.
 func (g *Getter) UploadListFiles(bot *tgapi.BotAPI, user string, chatId int64) (int, error) {
 	msg := tgapi.NewMessage(chatId, fmt.Sprintf(resources.LIST_FILES, user))
 
-	buttons := make([]tgapi.InlineKeyboardButton, 0)
+	buttons := make([][]tgapi.InlineKeyboardButton, 0)
 	for _, k := range g.FileStore.ListFiles(user) {
-		keyboardRow := tgapi.NewInlineKeyboardRow(tgapi.NewInlineKeyboardButtonData(k.FileName, fmt.Sprintf("f:%s;%s", user, k.FileName)))
-		buttons = append(buttons, keyboardRow...)
+		keyboardRow := tgapi.NewInlineKeyboardRow(tgapi.NewInlineKeyboardButtonData(k.FileName, fmt.Sprintf("f:%s;%d", user, k.Id)))
+		buttons = append(buttons, keyboardRow)
 	}
 
-	msg.ReplyMarkup = tgapi.NewInlineKeyboardMarkup(buttons)
+	msg.ReplyMarkup = tgapi.NewInlineKeyboardMarkup(buttons...)
 
 	m, err := bot.Send(msg)
 	if err != nil {
