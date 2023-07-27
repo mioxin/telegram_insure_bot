@@ -108,7 +108,7 @@ func (mf *MapStorage) ListFiles(user string) []*storages.FileInfo {
 
 func (mf *MapStorage) ListUsers() []string {
 	slUser := make([]string, 0)
-	for k, _ := range mf.store {
+	for k := range mf.store {
 		slUser = append(slUser, k)
 	}
 	return slUser
