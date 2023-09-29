@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -17,24 +18,25 @@ import (
 type MapStorage struct {
 	//map[user] map[filename]FileInfo
 	store map[string]map[string]*storages.FileInfo
+	maxid int
 	mtx   *sync.Mutex
 }
 
 func NewMapStorage() *MapStorage {
 	//open file
-	mapf, err := loadMap(resources.FILES_ID)
+	mapf, maxid, err := loadMap(resources.FILES_ID)
 	if err != nil {
-		log.Printf("error in NewMapStorage: the dat anot load from json, created empty map. %v\n", err)
+		log.Printf("error in NewMapStorage: the data not load from json, created empty map. %v\n", err)
 		mapf = make(map[string]map[string]*storages.FileInfo)
 	}
-	return &MapStorage{mapf, new(sync.Mutex)}
+	return &MapStorage{mapf, maxid, new(sync.Mutex)}
 }
 
 func (mf *MapStorage) Close() {
 	// save map to files_id.json
 	fl, err := os.OpenFile(resources.FILES_ID, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
-		log.Printf("map Storage Close: error while open files_id.json. Error %v\n", err)
+		log.Printf("map Storage Close: error while open files_id.json. %v\n", err)
 	}
 	defer fl.Close()
 	wr := bufio.NewWriter(fl)
@@ -46,26 +48,47 @@ func (mf *MapStorage) Close() {
 		for _, file := range flMap {
 			err := jenc.Encode(file)
 			if err != nil {
-				log.Printf("map Storage Close: error while save map to files_id.json. Error %v\n%#v", err, file)
+				log.Printf("map Storage Close: error while save map to files_id.json. %v\n%#v", err, file)
 			}
 		}
 	}
 	log.Printf("End Close MapStorage.\n")
 }
 
-func (mf *MapStorage) GetFileId(user, name string) (string, error) {
+func (mf *MapStorage) GetFileId(ids, user string) (string, error) {
+	var e error
 	mf.mtx.Lock()
 	defer mf.mtx.Unlock()
-	if f, ok := mf.store[user][name]; ok {
-		return f.FileId, nil
-	} else {
-		log.Printf("GetFileId: %v, %v\n %#v.\n", name, user, mf.store)
-		return "", fmt.Errorf("error in GetFileId: file_id \"%v\" in the map not found", name)
+
+	f, ok := mf.store[user]
+	if !ok {
+		log.Printf("GetFileId: user %v\n map %#v.\n", user, f)
+		return "", fmt.Errorf("error in GetFileId: user \"%v\" have not any files", user)
 	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil { // if ids is file name but not file num
+		for _, fl := range f {
+			if fl.FileName == ids {
+				return fl.FileId, nil
+			}
+		}
+		e = fmt.Errorf("error in GetFileId: id \"%v\" not converted to int\n %#v", ids, err)
+	} else {
+		for _, fl := range f {
+			if fl.Id == id {
+				return fl.FileId, nil
+			}
+		}
+		e = fmt.Errorf("error in GetFileId: file_id \"%v\" in the map %#v not found", id, f)
+	}
+
+	return "", e
 }
 
 func (mf *MapStorage) SetFileId(name, user, id string) error {
-	f := storages.FileInfo{Time: time.Now(), UserName: user, FileName: name, FileId: id}
+	mf.maxid++
+	f := storages.FileInfo{Id: mf.maxid, Time: time.Now(), UserName: user, FileName: name, FileId: id}
 	//save to map
 	mf.mtx.Lock()
 	defer mf.mtx.Unlock()
@@ -74,26 +97,6 @@ func (mf *MapStorage) SetFileId(name, user, id string) error {
 	}
 
 	mf.store[user][name] = &f
-
-	//save to files_id.json
-	// fl, err := os.OpenFile(resources.FILES_ID, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	// if err != nil {
-	// 	log.Printf("error in SetFileId: can not open file \"%v\"\n", resources.FILES_ID)
-	// 	return err
-	// }
-	// defer fl.Close()
-
-	// jsonFinfo, err := json.Marshal(f)
-	// if err != nil {
-	// 	log.Printf("error in SetFileId: can not marshal %v. %v\n", f, err)
-	// 	return err
-	// }
-	// _, err = fl.WriteString(string(jsonFinfo) + "\n")
-	// if err != nil {
-	// 	log.Printf("error in SetFileId: can not write the file info to %v. %v\n", resources.FILES_ID, err)
-	// 	return err
-	// }
-	//log.Printf("SetFileId: Map %#v\n", mf.store)
 
 	return nil
 }
@@ -108,18 +111,19 @@ func (mf *MapStorage) ListFiles(user string) []*storages.FileInfo {
 
 func (mf *MapStorage) ListUsers() []string {
 	slUser := make([]string, 0)
-	for k, _ := range mf.store {
+	for k := range mf.store {
 		slUser = append(slUser, k)
 	}
 	return slUser
 }
 
-func loadMap(filesIdJson string) (map[string]map[string]*storages.FileInfo, error) {
+func loadMap(filesIdJson string) (map[string]map[string]*storages.FileInfo, int, error) {
 	//var finfo *storages.FileInfo
 	m := make(map[string]map[string]*storages.FileInfo)
+	maxid := 0
 	fl, err := os.OpenFile(filesIdJson, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		return nil, err
+		return nil, maxid, err
 	}
 	defer fl.Close()
 
@@ -132,16 +136,16 @@ func loadMap(filesIdJson string) (map[string]map[string]*storages.FileInfo, erro
 			break
 		}
 		if err != nil {
-			log.Printf("LoadMap: error while load map from files_id.json. Error %v\n%#v", err, finfo)
+			log.Printf("LoadMap: error while load map from files_id.json.\n%#v", err)
 		} else {
-			//key is a path ./username/filename
-			// fileName := filepath.Join(finfo.UserName, )
-			// m[fileName] = finfo
+			if maxid < finfo.Id {
+				maxid = finfo.Id
+			}
 			if _, ok := m[finfo.UserName]; !ok {
 				m[finfo.UserName] = make(map[string]*storages.FileInfo)
 			}
 			m[finfo.UserName][finfo.FileName] = finfo
 		}
 	}
-	return m, nil
+	return m, maxid, nil
 }

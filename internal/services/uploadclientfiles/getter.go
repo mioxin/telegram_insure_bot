@@ -1,4 +1,4 @@
-package getclientfiles
+package uploadclientfiles
 
 import (
 	"fmt"
@@ -50,8 +50,11 @@ func (g *Getter) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.
 			}
 		case "f": //file
 			f := strings.Split(arr[1], ";")
-			fileID, _ := g.FileStore.GetFileId(f[0], f[1])
+			fileID, _ := g.FileStore.GetFileId(f[1], f[0])
 			mId, _ = g.UploadFile(bot, fileID, chatId)
+			if err != nil {
+				log.Printf("error getter Execute: %s", err)
+			}
 		default:
 		}
 	}
@@ -62,16 +65,17 @@ func (g *Getter) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.
 func (g *Getter) UploadListFiles(bot *tgapi.BotAPI, user string, chatId int64) (int, error) {
 	msg := tgapi.NewMessage(chatId, fmt.Sprintf(resources.LIST_FILES, user))
 
-	buttons := make([]tgapi.InlineKeyboardButton, 0)
+	buttons := make([][]tgapi.InlineKeyboardButton, 0)
 	for _, k := range g.FileStore.ListFiles(user) {
-		keyboardRow := tgapi.NewInlineKeyboardRow(tgapi.NewInlineKeyboardButtonData(k.FileName, fmt.Sprintf("f:%s;%s", user, k.FileName)))
-		buttons = append(buttons, keyboardRow...)
+		keyboardRow := tgapi.NewInlineKeyboardRow(tgapi.NewInlineKeyboardButtonData(k.FileName, fmt.Sprintf("f:%s;%d", user, k.Id)))
+		buttons = append(buttons, keyboardRow)
 	}
 
-	msg.ReplyMarkup = tgapi.NewInlineKeyboardMarkup(buttons)
+	msg.ReplyMarkup = tgapi.NewInlineKeyboardMarkup(buttons...)
 
 	m, err := bot.Send(msg)
 	if err != nil {
+		log.Printf("getter UploadListFile: buttons: %#v", buttons)
 		return 0, err
 	}
 	return m.MessageID, nil
@@ -80,10 +84,16 @@ func (g *Getter) UploadListFiles(bot *tgapi.BotAPI, user string, chatId int64) (
 func (g *Getter) UploadFile(bot *tgapi.BotAPI, fileID string, chatId int64) (int, error) {
 	log.Printf("getter UploadFile: id: %s", fileID)
 
-	msg := tgapi.NewDocumentShare(chatId, fileID)
-	m, err := bot.Send(msg)
-	if err != nil {
-		return 0, err
+	m, err := bot.Send(tgapi.NewDocumentShare(chatId, fileID))
+
+	if err != nil { // file isnt document
+		log.Printf("error getter UploadFile: %s, chat ID:%v fileID:%v", err, chatId, fileID)
+
+		m, err = bot.Send(tgapi.NewPhotoShare(chatId, fileID))
+		if err != nil {
+			log.Printf("error getter UploadFile: %s, chat ID:%v fileID:%v", err, chatId, fileID)
+			return 0, err
+		}
 	}
 	return m.MessageID, nil
 

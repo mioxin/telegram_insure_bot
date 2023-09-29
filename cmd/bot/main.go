@@ -79,7 +79,7 @@ func main() {
 
 	bot, err := tgapi.NewBotAPIWithClient(conf.Token, httpclient.NewHTTPClient())
 	if err != nil {
-		log.Fatal("<<<", conf.Token, ">>> ", err)
+		log.Fatal("<<<", conf.Token[:10], "...>>> ", err)
 	}
 
 	bot.Debug = debug

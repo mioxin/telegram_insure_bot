@@ -11,9 +11,9 @@ import (
 	"github.com/mrmioxin/gak_telegram_bot/internal/config"
 	"github.com/mrmioxin/gak_telegram_bot/internal/handlers"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services"
-	"github.com/mrmioxin/gak_telegram_bot/internal/services/getclientfiles"
 	"github.com/mrmioxin/gak_telegram_bot/internal/services/product1"
 	srv_cfls "github.com/mrmioxin/gak_telegram_bot/internal/services/receive_client_files"
+	"github.com/mrmioxin/gak_telegram_bot/internal/services/uploadclientfiles"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/clientfiles"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
 	"github.com/mrmioxin/gak_telegram_bot/resources"
@@ -24,7 +24,7 @@ type IHandler interface {
 }
 
 type IFilesStorage interface {
-	GetFileId(user, name string) (string, error)
+	GetFileId(name, user string) (string, error)
 	SetFileId(name, user, id string) error
 	ListUsers() []string
 	// ListFiles(user string) []*storages.FileInfo
@@ -57,9 +57,9 @@ func NewCommander(bot *tgapi.BotAPI, conf *config.Config) *Commander {
 	prods := make(map[string]services.IService)
 	files := clientfiles.NewMapStorage()
 
-	prods["calc"] = product1.NewInsurence("ОСНС")  //processing of calc command (get data and colculate the cost of osns Insurance)
-	prods["send"] = srv_cfls.NewReceiver(files)    //receive and store a files was send to bot from users
-	prods["get"] = getclientfiles.NewGetter(files) //get client files that was sended to bot from users from the store
+	prods["calc"] = product1.NewInsurence("ОСНС")     //processing of calc command (get data and colculate the cost of osns Insurance)
+	prods["send"] = srv_cfls.NewReceiver(files)       //receive and store a files was send to bot from users
+	prods["get"] = uploadclientfiles.NewGetter(files) //get client files that was sended to bot from users from the store
 
 	s := sessions.NewMemSessions()
 	// done := make(chan struct{})
