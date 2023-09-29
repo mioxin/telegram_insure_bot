@@ -77,7 +77,7 @@ func (r *HandlerCalc) gfot(updMes *tgapi.Message) error {
 
 func (r *HandlerCalc) Get_yes_no(callbackData string) (string, error) {
 	var err error
-	log.Println("Get_yes_no: start", callbackData, err)
+	log.Printf("[%s] Get_yes_no: start %v", r.User, callbackData)
 	if callbackData == "yes" {
 		r.ins.EventInLast5Year = true
 	}

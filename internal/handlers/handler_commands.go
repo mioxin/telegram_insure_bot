@@ -29,7 +29,12 @@ type RegisteredCommand struct {
 var registered_commands = map[string]RegisteredCommand{}
 
 func NewHandlerCommand(bot *tgapi.BotAPI, files_id IFilesID, ses *sessions.Session, update tgapi.Update) *HandlerCommands {
-	return &HandlerCommands{Handler{bot, ses, update}, files_id}
+	user := update.Message.Chat.UserName
+	if user == "" {
+		user = update.CallbackQuery.Message.Chat.UserName
+	}
+
+	return &HandlerCommands{Handler{bot, ses, update, user}, files_id}
 }
 
 func (h *HandlerCommands) Execute() {
@@ -51,6 +56,6 @@ func (h *HandlerCommands) Execute() {
 
 		msg := tgapi.NewMessage(h.Update.Message.Chat.ID, resources.WRONG_ACCESS)
 		h.Bot.Send(msg)
-		log.Printf("HandlerCommand: deny acces fo @%s on /%s\n", h.Update.Message.Chat.UserName, h.Update.Message.Command())
+		log.Printf("[%s] HandlerCommand: deny acces on /%s\n", h.User, h.Update.Message.Command())
 	}
 }

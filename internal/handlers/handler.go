@@ -9,4 +9,5 @@ type Handler struct {
 	Bot    *tgapi.BotAPI
 	Ses    *sessions.Session
 	Update tgapi.Update
+	User   string
 }

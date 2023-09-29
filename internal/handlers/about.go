@@ -33,7 +33,7 @@ func (h *HandlerCommands) about(input_message *tgapi.Message) (string, int) {
 
 func (h *HandlerCommands) videoMessage(input_message *tgapi.Message) (tgapi.Chattable, error) {
 	var vmsg tgapi.VideoConfig
-	if file_id, err := h.FilesId.GetFileId("bot", resources.VIDEO_ABOUT); err != nil {
+	if file_id, err := h.FilesId.GetFileId(resources.VIDEO_ABOUT, "bot"); err != nil {
 		log.Printf("About command: %v. The video \"about\" will be send by file\n", err)
 		if file, err := os.OpenFile(resources.VIDEO_ABOUT, os.O_RDONLY, 0755); err != nil {
 			return nil, fmt.Errorf("error About videoMessage: %v", err)

@@ -12,11 +12,12 @@ func (h *HandlerCommands) get(input_message *tgapi.Message) (string, int) {
 
 	msg := tgapi.NewMessage(input_message.Chat.ID, resources.GET)
 
-	buttons := make([]tgapi.InlineKeyboardButton, 0)
+	buttons := make([][]tgapi.InlineKeyboardButton, 0)
 	for _, k := range h.FilesId.ListUsers() {
-		buttons = append(buttons, tgapi.NewInlineKeyboardButtonData(k, "user:"+k))
+		keyboardRow := tgapi.NewInlineKeyboardRow(tgapi.NewInlineKeyboardButtonData(k, "user:"+k))
+		buttons = append(buttons, keyboardRow)
 	}
-	msg.ReplyMarkup = tgapi.NewInlineKeyboardMarkup(buttons)
+	msg.ReplyMarkup = tgapi.NewInlineKeyboardMarkup(buttons...)
 
 	m, _ := h.Bot.Send(msg)
 	return "get", m.MessageID

@@ -2,8 +2,6 @@ package receive_client_files
 
 import (
 	"log"
-	"os"
-	"path/filepath"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
@@ -58,21 +56,18 @@ func (r *Recever) saveFile(ses *sessions.Session, update tgapi.Update) (tgapi.Ch
 	switch {
 	case update.Message.Photo != nil:
 		len_arr := len(*update.Message.Photo)
-		fileName = "img_" + (*update.Message.Photo)[len_arr-1].FileID
+		len_id := len((*update.Message.Photo)[len_arr-1].FileID)
+		addname := (*update.Message.Photo)[len_arr-1].FileID
+		if len_id > 10 {
+			addname = (*update.Message.Photo)[len_arr-1].FileID[len_id-10:]
+		}
+		fileName = "typePhoto_" + addname
 		fileId = (*update.Message.Photo)[len_arr-1].FileID
 	case update.Message.Document != nil:
 		fileName = update.Message.Document.FileName
 		fileId = update.Message.Document.FileID
 	default:
 	}
-	//create dir "receive/username/" for download a user file if need it in future.
-	_, err = os.ReadDir(filepath.Join(resources.CLIENT_FILES_FOLDER, userName))
-	if os.IsNotExist(err) { //dir not exist
-		os.Mkdir(filepath.Join(resources.CLIENT_FILES_FOLDER, userName), 0755)
-	} else if err != nil {
-		strMsg = resources.WRONG_SAVE_FILES
-	}
-
 	//save file info to map & json
 	r.FileStore.SetFileId(fileName, userName, fileId)
 

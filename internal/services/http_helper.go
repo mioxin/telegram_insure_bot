@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,12 +13,14 @@ import (
 // HttpHelper предоставляет удобный интерфейс
 // для выполнения HTTP-запросов
 type HttpHelper struct {
-	client       *http.Client
-	req          *http.Request
-	uri          string
-	cookies      map[string]string
-	headers      map[string]string
-	params, form map[string]string
+	client                   *http.Client
+	rbody                    any
+	uri                      string
+	form                     map[string]string
+	cookies, headers, params []pair
+}
+type pair struct {
+	k, v string
 }
 
 // NewHttpHelper создает новый экземпляр HttpHelper
@@ -36,7 +37,7 @@ func NewHttpHelper() *HttpHelper {
 		Transport: transport,
 	}
 	uri := ""
-	return &HttpHelper{&cl, nil, uri, make(map[string]string), make(map[string]string), make(map[string]string), make(map[string]string)}
+	return &HttpHelper{&cl, nil, uri, make(map[string]string), make([]pair, 0), make([]pair, 0), make([]pair, 0)}
 }
 
 // URL устанавливает URL, на который пойдет запрос
@@ -54,19 +55,18 @@ func (h *HttpHelper) Client(cl *http.Client) *HttpHelper {
 
 // Header устанавливает значение заголовка
 func (h *HttpHelper) Header(key, value string) *HttpHelper {
-	h.headers[key] = value
+	h.headers = append(h.headers, pair{key, value})
 	return h
 }
 
-// Header устанавливает значение заголовка
 func (h *HttpHelper) Cookies(key, value string) *HttpHelper {
-	h.cookies[key] = value
+	h.cookies = append(h.cookies, pair{key, value})
 	return h
 }
 
 // Param устанавливает значение URL-параметра
 func (h *HttpHelper) Param(key, value string) *HttpHelper {
-	h.params[key] = value
+	h.params = append(h.params, pair{key, value})
 	return h
 }
 
@@ -77,6 +77,8 @@ func (h *HttpHelper) Form(form map[string]string) *HttpHelper {
 	for k, v := range form {
 		h.form[k] = v
 	}
+	h.headers = append(h.headers, pair{"Content-Type", "application/x-www-form-urlencoded"})
+
 	return h
 }
 
@@ -84,38 +86,33 @@ func (h *HttpHelper) Form(form map[string]string) *HttpHelper {
 // как application/json и отправлены в теле запроса
 // с соответствующим content-type
 func (h *HttpHelper) JSON(v any) *HttpHelper {
-	h.form = nil
-	b, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
-	h.req, err = http.NewRequest(http.MethodPost, h.uri, bytes.NewReader(b))
-	if err != nil {
-		panic(err)
-	}
-	h.req.Header.Add("Content-Type", "application/json")
-	h.req.Header.Add("Accept", "application/json")
+	h.rbody = v
+	h.headers = append(h.headers, pair{"Content-Type", "application/json"})
+	h.headers = append(h.headers, pair{"Accept", "application/json"})
 	return h
 }
 
 // Get выполняет GET-запрос с настроенными ранее параметрами
 func (h *HttpHelper) Get() *HttpHelperResponse {
 	var err error
-	h.req, err = http.NewRequest(http.MethodGet, h.uri, nil)
+	req, err := http.NewRequest(http.MethodGet, h.uri, nil)
 	if err != nil {
 		return &HttpHelperResponse{0, "", err, nil}
 	}
-	p := url.Values{}
-	for k, v := range h.params {
-		p.Add(k, v)
+	prm := url.Values{}
+	for _, p := range h.params {
+		prm.Add(p.k, p.v)
 	}
-	h.req.URL.RawQuery = p.Encode()
-	for k, v := range h.headers {
-		h.req.Header.Add(k, v)
+	req.URL.RawQuery = prm.Encode()
+	for _, h := range h.headers {
+		req.Header.Add(h.k, h.v)
 	}
-	resp, err := h.client.Do(h.req)
+	resp, err := h.client.Do(req)
 
 	if err != nil {
+		if resp != nil {
+			defer resp.Body.Close()
+		}
 		return &HttpHelperResponse{0, "", err, nil}
 	} else {
 		return NewHttpHelperResponse(resp)
@@ -124,25 +121,48 @@ func (h *HttpHelper) Get() *HttpHelperResponse {
 
 // Post выполняет POST-запрос с настроенными ранее параметрами
 func (h *HttpHelper) Post() *HttpHelperResponse {
-	if h.form != nil {
+	var rdr io.Reader
+	if len(h.form) > 0 {
 		f := url.Values{}
 		for k, v := range h.form {
 			f.Add(k, v)
 		}
-		if resp, err := h.client.PostForm(h.uri, f); err != nil {
-			return &HttpHelperResponse{0, "", err, nil}
-		} else {
-			return NewHttpHelperResponse(resp)
-		}
-	} else {
-		resp, err := h.client.Do(h.req)
-		if err != nil {
-			return &HttpHelperResponse{0, "", err, nil}
-		} else {
-			return NewHttpHelperResponse(resp)
-		}
-
+		rdr = bytes.NewReader([]byte(f.Encode()))
 	}
+
+	if h.rbody != nil {
+		if jsondata, err := json.Marshal(h.rbody); err != nil {
+			return &HttpHelperResponse{0, "", err, nil}
+		} else {
+			rdr = bytes.NewReader(jsondata)
+		}
+	}
+
+	req, err := http.NewRequest(http.MethodPost, h.uri, rdr)
+	if err != nil {
+		return &HttpHelperResponse{0, "", err, nil}
+	}
+
+	prm := url.Values{}
+	for _, p := range h.params {
+		prm.Add(p.k, p.v)
+	}
+	req.URL.RawQuery = prm.Encode()
+
+	for _, h := range h.headers {
+		req.Header.Add(h.k, h.v)
+	}
+
+	resp, err := h.client.Do(req)
+	if err != nil {
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		return &HttpHelperResponse{0, "", err, nil}
+	} else {
+		return NewHttpHelperResponse(resp)
+	}
+
 }
 
 // HttpHelperResponse представляет ответ на HTTP-запрос
@@ -151,7 +171,6 @@ type HttpHelperResponse struct {
 	Status     string
 	err        error
 	response   []byte
-	//response   *http.Response
 }
 
 func NewHttpHelperResponse(rsp *http.Response) *HttpHelperResponse {
@@ -166,11 +185,7 @@ func NewHttpHelperResponse(rsp *http.Response) *HttpHelperResponse {
 // OK возвращает true, если во время выполнения запроса
 // не произошло ошибок, а код HTTP-статуса ответа равен 200
 func (r *HttpHelperResponse) OK() bool {
-	if r.StatusCode >= 200 && r.StatusCode <= 302 {
-		return true
-	}
-	r.err = fmt.Errorf("HttpHelperResponse.OK: error request %v", r.Status)
-	return false
+	return r.StatusCode == 200
 }
 
 // Bytes возвращает тело ответа как срез байт
@@ -189,24 +204,14 @@ func (r *HttpHelperResponse) JSON(v any) {
 	// работает аналогично json.Unmarshal()
 	// если при декодировании произошла ошибка,
 	// она должна быть доступна через r.Err()
-
-	//log.Println("htmlHelper: valid ", json.Valid(r.Bytes()))
-	r.err = nil
 	rb := r.response
-	if json.Valid(rb) {
-		if err := json.Unmarshal(rb, v); err != nil {
-			r.err = err
-		}
-	} else {
-		r.err = fmt.Errorf("HttpHelperResponse.JSON: error %v is not valid json", r.String())
+	if err := json.Unmarshal(rb, v); err != nil {
+		r.err = err
 	}
 }
 
 // Err возвращает ошибку, которая возникла при выполнении запроса
 // или обработке ответа
 func (r *HttpHelperResponse) Err() error {
-	if r.err != nil {
-		return r.err
-	}
-	return nil
+	return r.err
 }
