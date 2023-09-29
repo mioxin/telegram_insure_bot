@@ -12,7 +12,7 @@ on:
     
 jobs:
 
-  run:
+  start:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -24,10 +24,9 @@ jobs:
       with:
         go-version: '1.20'
 
-     - name: Build
+    - name: Build
       env: 
         TOKEN: ${{ secrets.BTOKEN }}
-        run: go version
-      
+      run: go version
       # run: go run cmd/bot/main.go -v -t $TOKEN
 
