@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mrmioxin/gak_telegram_bot/internal/commands"
@@ -47,6 +48,9 @@ func parsConf() {
 		log.Panic(err)
 	}
 
+	if token == "" {
+		token = os.Getenv("TELEGRAM_BOT_TOKEN")
+	}
 	if token != "" {
 		conf.Token = token
 	} else if conf.Token == "" {
@@ -79,25 +83,24 @@ func main() {
 
 	bot, err := tgapi.NewBotAPIWithClient(conf.Token, httpclient.NewHTTPClient())
 	if err != nil {
-		log.Fatal("<<<", conf.Token[:10], "...>>> ", err)
+		log.Fatal("Telegram API connection failed: ", err)
 	}
 
 	bot.Debug = debug
 	log.Printf("Authorized on account %s\n", bot.Self.UserName)
-	chSignal := make(chan os.Signal)
+	chSignal := make(chan os.Signal, 1)
 
 	// isModifyConfig := make(chan any)
 	// go conf.Watch(resources.CONFIG_FILE_NAME, resources.DURATION_WATCH_CONFIG, isModifyConfig)
 
 	c := commands.NewCommander(bot, conf) //, isModifyConfig)
-	defer c.Stop()
 
-	signal.Notify(chSignal, os.Interrupt, os.Kill)
+	signal.Notify(chSignal, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(chSignal)
 	go func() {
 		<-chSignal
 		c.Stop()
 		log.Println("Cancel bot by OS interruption.")
-		os.Exit(1)
 	}()
 
 	c.Start()

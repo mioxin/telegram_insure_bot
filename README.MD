@@ -14,6 +14,8 @@ Using:
 ---
 __gak_telegram_bot <-t security_token> <-v> <-d> <-c config_file> <-h>__
 
+The Telegram token must be supplied with `-t` or the `TELEGRAM_BOT_TOKEN` environment variable. Do not store tokens in config files or commit them to Git.
+
 ***REMOVED******REMOVED******REMOVED******REMOVED*** Flags:
     -t:             The Telegram Bot API security token. The value override secure token in config file.
     -v, -verbouse:  Output log to StdOut (Default: off)
@@ -41,4 +43,8 @@ acc_word = oQkkj1!_k
 ***REMOVED******REMOVED******REMOVED******REMOVED*** List of users (comma separated) for access to admin command
 
 adm_group = Firecat1
+
+***REMOVED******REMOVED******REMOVED******REMOVED*** Company name shown in user-facing messages
+
+company = Страховая Компания в г. Петропавловск (Казахстан)
 

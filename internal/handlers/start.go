@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -10,7 +11,7 @@ import (
 func (h *HandlerCommands) start(input_message *tgapi.Message) (string, int) {
 	log.Printf("start: [%s] %s", input_message.From.UserName, input_message.Text)
 
-	msg := tgapi.NewMessage(input_message.Chat.ID, resources.START)
+	msg := tgapi.NewMessage(input_message.Chat.ID, fmt.Sprintf(resources.START, resources.COMPANY))
 	m, _ := h.Bot.Send(msg)
 	return "", m.MessageID
 }

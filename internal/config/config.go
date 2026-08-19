@@ -14,6 +14,7 @@ import (
 
 type Config struct {
 	Token    string
+	Company  string
 	LogFile  string
 	ConfFile string
 	AccWord  string
@@ -41,6 +42,7 @@ func NewConfig(configName string) (*Config, error) {
 	}
 
 	config.ConfFile = configName
+	resources.COMPANY = config.Company
 
 	return &config, err
 }
@@ -56,7 +58,7 @@ func str_map(s string) map[string]struct{} {
 }
 
 func ParseConfigFile(config_file io.Reader) (Config, error) {
-	var token, logFile, acc_word string
+	var token, company, logFile, acc_word string
 	deny := make(map[string]struct{})
 	allow := make(map[string]struct{})
 	adm := make(map[string]struct{})
@@ -90,6 +92,8 @@ func ParseConfigFile(config_file io.Reader) (Config, error) {
 			if token == "" {
 				return config, fmt.Errorf("error ParseConfigFile: in the config file secure token expected")
 			}
+		case "company":
+			company = strings.TrimSpace(arr_str[1])
 		case "log_file":
 			logFile = strings.TrimSpace(arr_str[1])
 		case "deny":
@@ -111,8 +115,11 @@ func ParseConfigFile(config_file io.Reader) (Config, error) {
 	if logFile == "" {
 		logFile = resources.DEFAULT_LOG_FILE
 	}
+	if company == "" {
+		company = resources.COMPANY
+	}
 
-	return Config{Token: token, LogFile: logFile, Deny: deny, Allow: allow, Admins: adm, AccWord: acc_word}, nil
+	return Config{Token: token, Company: company, LogFile: logFile, Deny: deny, Allow: allow, Admins: adm, AccWord: acc_word}, nil
 }
 
 func (conf *Config) Update() {
@@ -128,6 +135,7 @@ func (conf *Config) Update() {
 	}
 	c.ConfFile = conf.ConfFile
 	*conf = c
+	resources.COMPANY = conf.Company
 
 	if flInfo, err := os.Stat(conf.ConfFile); err != nil {
 		log.Printf("error in Update config: %***REMOVED***v\n%***REMOVED***v\n", err, conf)

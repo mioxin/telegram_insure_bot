@@ -59,6 +59,16 @@ func TestParseConfigFilePreservesEqualsInValue(t *testing.T) {
 	}
 }
 
+func TestParseConfigFileReadsCompany(t *testing.T) {
+	cfg, err := ParseConfigFile(strings.NewReader("company = Test Company"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Company != "Test Company" {
+		t.Fatalf("company = %q, want %q", cfg.Company, "Test Company")
+	}
+}
+
 // func Test_st1(t *testing.T) {
 // 	st()
 // }
