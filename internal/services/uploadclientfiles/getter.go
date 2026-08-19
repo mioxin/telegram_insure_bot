@@ -33,14 +33,15 @@ func (g *Getter) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.
 	if update.CallbackQuery != nil {
 		chatId := update.CallbackQuery.Message.Chat.ID
 		arr := strings.Split(update.CallbackQuery.Data, ":")
-		log.Printf("getter Execute: slice CallbackQuery.Data %s", arr)
+		log.Printf("getter Execute: callback data %q", update.CallbackQuery.Data)
 
-		if len(arr) > 1 {
-			key = strings.TrimSpace(arr[0])
-		} else {
+		if len(arr) != 2 || strings.TrimSpace(arr[0]) == "" || strings.TrimSpace(arr[1]) == "" {
 			log.Printf("error getter Execute: CallbackQuery.Data %s", update.CallbackQuery.Data)
 			mId, _ = sendSysError(bot, ses, chatId)
+			ses.LastMessageID = mId
+			return
 		}
+		key = strings.TrimSpace(arr[0])
 		switch key {
 		case "user":
 			mId, err = g.UploadListFiles(bot, arr[1], chatId)
@@ -50,10 +51,20 @@ func (g *Getter) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.
 			}
 		case "f": //file
 			f := strings.Split(arr[1], ";")
-			fileID, _ := g.FileStore.GetFileId(f[1], f[0])
-			mId, _ = g.UploadFile(bot, fileID, chatId)
+			if len(f) != 2 || strings.TrimSpace(f[0]) == "" || strings.TrimSpace(f[1]) == "" {
+				mId, _ = sendSysError(bot, ses, chatId)
+				break
+			}
+			fileID, err := g.FileStore.GetFileId(f[1], f[0])
 			if err != nil {
 				log.Printf("error getter Execute: %s", err)
+				mId, _ = sendSysError(bot, ses, chatId)
+				break
+			}
+			mId, err = g.UploadFile(bot, fileID, chatId)
+			if err != nil {
+				log.Printf("error getter Execute: %s", err)
+				mId, _ = sendSysError(bot, ses, chatId)
 			}
 		default:
 		}

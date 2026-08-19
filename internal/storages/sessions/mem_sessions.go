@@ -8,15 +8,17 @@ import (
 
 type MemSessions struct {
 	sessions map[int64]Session
-	mtx      *sync.Mutex
+	mtx      *sync.RWMutex
 }
 
 func NewMemSessions() *MemSessions {
 	s := make(map[int64]Session)
-	return &MemSessions{s, new(sync.Mutex)}
+	return &MemSessions{s, new(sync.RWMutex)}
 }
 
 func (mses *MemSessions) GetSession(id int64) (*Session, error) {
+	mses.mtx.RLock()
+	defer mses.mtx.RUnlock()
 	if ses, ok := mses.sessions[id]; ok {
 		return &ses, nil
 	} else {
@@ -26,8 +28,8 @@ func (mses *MemSessions) GetSession(id int64) (*Session, error) {
 
 func (mses *MemSessions) UpdateSession(id int64, ses *Session) error {
 	var err error
-	mses.mtx.Lock()
-	defer mses.mtx.Unlock()
+	mses.mtx.RLock()
+	defer mses.mtx.RUnlock()
 	if _, ok := mses.sessions[id]; !ok {
 		return fmt.Errorf("error UpdateSession: session id=%v not found. created new session", id)
 	}

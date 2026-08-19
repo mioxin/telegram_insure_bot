@@ -35,8 +35,8 @@ func (r *HandlerCalc) binIin(updMes *tgapi.Message) error {
 	if comp, err := services.NewCompany(strings.TrimSpace(updMes.Text)); err != nil {
 		return ErrorBinIinNotFound{updMes.Text}
 	} else {
-		r.ins.Vid = comp.OkedCode
-		r.ins.VidDescr = comp.OkedName
+		r.vid = comp.OkedCode
+		r.vidDescr = comp.OkedName
 		log.Println("binIin: user:", updMes.Chat.UserName, comp)
 	}
 	return nil
@@ -51,15 +51,15 @@ func (r *HandlerCalc) oked(updMes *tgapi.Message) error {
 	if descr, err := r.ins.TypeOfBuseness.Get(vid); err != nil {
 		return err
 	} else {
-		r.ins.VidDescr = descr
+		r.vidDescr = descr
 	}
-	r.ins.Vid = vid
+	r.vid = vid
 	return nil
 }
 
 func (r *HandlerCalc) totalWorker(updMes *tgapi.Message) error {
 	var err error
-	r.ins.Total_work, err = r.str2int(updMes)
+	r.totalWork, err = r.str2int(updMes)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (r *HandlerCalc) totalWorker(updMes *tgapi.Message) error {
 
 func (r *HandlerCalc) gfot(updMes *tgapi.Message) error {
 	var err error
-	r.ins.Gfot, err = r.str2float(updMes)
+	r.gfotValue, err = r.str2float(updMes)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (r *HandlerCalc) Get_yes_no(callbackData string) (string, error) {
 	var err error
 	log.Printf("[%s] Get_yes_no: start %v", r.User, callbackData)
 	if callbackData == "yes" {
-		r.ins.EventInLast5Year = true
+		r.eventLast5Year = true
 	}
 
 	sum, err := r.Calculate()

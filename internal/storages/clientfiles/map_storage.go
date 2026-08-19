@@ -33,6 +33,8 @@ func NewMapStorage() *MapStorage {
 }
 
 func (mf *MapStorage) Close() {
+	mf.mtx.Lock()
+	defer mf.mtx.Unlock()
 	// save map to files_id.json
 	fl, err := os.OpenFile(resources.FILES_ID, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
@@ -87,11 +89,10 @@ func (mf *MapStorage) GetFileId(ids, user string) (string, error) {
 }
 
 func (mf *MapStorage) SetFileId(name, user, id string) error {
-	mf.maxid++
-	f := storages.FileInfo{Id: mf.maxid, Time: time.Now(), UserName: user, FileName: name, FileId: id}
-	//save to map
 	mf.mtx.Lock()
 	defer mf.mtx.Unlock()
+	mf.maxid++
+	f := storages.FileInfo{Id: mf.maxid, Time: time.Now(), UserName: user, FileName: name, FileId: id}
 	if _, ok := mf.store[user]; !ok {
 		mf.store[user] = make(map[string]*storages.FileInfo)
 	}
@@ -103,14 +104,19 @@ func (mf *MapStorage) SetFileId(name, user, id string) error {
 
 func (mf *MapStorage) ListFiles(user string) []*storages.FileInfo {
 	slFiles := make([]*storages.FileInfo, 0)
+	mf.mtx.Lock()
+	defer mf.mtx.Unlock()
 	for _, f := range mf.store[user] {
-		slFiles = append(slFiles, f) //.FileName+"; "+f.Time.Format("2/1/2006 15:16:17"))
+		file := *f
+		slFiles = append(slFiles, &file)
 	}
 	return slFiles
 }
 
 func (mf *MapStorage) ListUsers() []string {
 	slUser := make([]string, 0)
+	mf.mtx.Lock()
+	defer mf.mtx.Unlock()
 	for k := range mf.store {
 		slUser = append(slUser, k)
 	}

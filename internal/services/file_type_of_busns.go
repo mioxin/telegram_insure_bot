@@ -18,26 +18,26 @@ func NewFileTypeOfBusns(file string) (fileTypeOfBusns, error) {
 		return nil, err
 	}
 
-	if err != nil {
-		log.Println("error NewFileTypeOdBusns: Cant open file vid.txt.", err)
-		return nil, err
-	}
 	in := bufio.NewReader(strings.NewReader(string(strInp)))
 	for {
 		ln, err := in.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
-			log.Println("error NewFileTypeOdBusns: error read vid.txt.", err)
-			return nil, err
+			if err != io.EOF {
+				log.Println("error NewFileTypeOdBusns: error read vid.txt.", err)
+				return nil, err
+			}
 		}
 		arr := strings.Split(strings.TrimSpace(ln), "-")
-		vid := strings.TrimSpace(arr[0])
 		if len(arr) < 2 {
-			log.Printf("error NewFileTypeOdBusns: skip line %v.\n %v", ln, err)
+			if strings.TrimSpace(ln) != "" {
+				log.Printf("error NewFileTypeOdBusns: skip line %v", ln)
+			}
 		} else {
+			vid := strings.TrimSpace(arr[0])
 			tob[vid] = arr[1]
+		}
+		if err == io.EOF {
+			break
 		}
 	}
 	return fileTypeOfBusns(tob), nil

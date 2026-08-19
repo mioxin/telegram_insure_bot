@@ -65,14 +65,23 @@ func ParseConfigFile(config_file io.Reader) (Config, error) {
 	in := bufio.NewReader(config_file)
 	for {
 		str, err := in.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
-			return config, err
+			if err != io.EOF {
+				return config, err
+			}
 		}
-		arr_str := strings.Split(strings.TrimSpace(str), "=")
-		if len(arr_str) < 2 || arr_str[0][:2] == "//" || arr_str[0][:1] == "***REMOVED***" {
+		line := strings.TrimSpace(str)
+		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "***REMOVED***") {
+			if err == io.EOF {
+				break
+			}
+			continue
+		}
+		arr_str := strings.SplitN(line, "=", 2)
+		if len(arr_str) < 2 {
+			if err == io.EOF {
+				break
+			}
 			continue
 		}
 		switch strings.TrimSpace(arr_str[0]) {
@@ -95,6 +104,9 @@ func ParseConfigFile(config_file io.Reader) (Config, error) {
 		default:
 			log.Println("ParseConfigFile: unrecognized param in the line: ", str)
 		}
+		if err == io.EOF {
+			break
+		}
 	}
 	if logFile == "" {
 		logFile = resources.DEFAULT_LOG_FILE
@@ -104,18 +116,17 @@ func ParseConfigFile(config_file io.Reader) (Config, error) {
 }
 
 func (conf *Config) Update() {
-	// var err error
 	configFile, err := os.ReadFile(conf.ConfFile)
 	if err != nil {
-		log.Printf("error in Update config: %***REMOVED***v\n%***REMOVED***v\n", err, conf)
+		log.Printf("error in Update config: %v", err)
+		return
 	}
 	c, err := ParseConfigFile(strings.NewReader(string(configFile)))
 	if err != nil {
-		log.Printf("error in Update config: %***REMOVED***v\n%***REMOVED***v\n", err, conf)
+		log.Printf("error in Update config: %v", err)
+		return
 	}
-	if c.ConfFile == "" {
-		c.ConfFile = conf.ConfFile
-	}
+	c.ConfFile = conf.ConfFile
 	*conf = c
 
 	if flInfo, err := os.Stat(conf.ConfFile); err != nil {

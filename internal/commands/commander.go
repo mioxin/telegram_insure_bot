@@ -105,12 +105,16 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 
 	switch {
 	case update.CallbackQuery != nil:
+		if update.CallbackQuery.Message == nil || update.CallbackQuery.Message.Chat == nil {
+			log.Printf("error HandlerMain: callback without message: %***REMOVED***v", update.CallbackQuery)
+			return nil
+		}
 		log.Printf("CallbackQuery in HandlerMain: %***REMOVED***v", update.CallbackQuery)
 		chatID = update.CallbackQuery.Message.Chat.ID
 		ses, _ = cmder.Sessions.GetSession(chatID)
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 
-	case update.Message.IsCommand():
+	case update.Message != nil && update.Message.IsCommand():
 		log.Printf("Command in HandlerMain: %***REMOVED***v", update.Message.Command())
 		ses = sessions.NewSession(update.Message.Chat.UserName)
 
@@ -127,9 +131,13 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 
 	default:
-		log.Printf("error HandlerMain: invalid Message %***REMOVED***v (user %v)", update.Message, update.Message.Chat.UserName)
+		log.Printf("error HandlerMain: update has no supported message: %***REMOVED***v", update)
+		return nil
 	}
 
+	if h == nil {
+		return nil
+	}
 	h.Execute()
 
 	if err := cmder.Sessions.UpdateSession(chatID, ses); err != nil {

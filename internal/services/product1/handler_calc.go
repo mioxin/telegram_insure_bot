@@ -14,6 +14,11 @@ import (
 type HandlerCalc struct {
 	ins *Insurance
 	handlers.Handler
+	vid            string
+	vidDescr       string
+	totalWork      int
+	gfotValue      float64
+	eventLast5Year bool
 }
 
 type reguest struct {
@@ -42,7 +47,7 @@ func NewHandlerCalc(ins *Insurance, bot *tgapi.BotAPI, ses *sessions.Session, up
 		user = update.CallbackQuery.Message.Chat.UserName
 	}
 
-	return &HandlerCalc{ins, handlers.Handler{Bot: bot, Ses: ses, Update: update, User: user}}
+	return &HandlerCalc{ins: ins, Handler: handlers.Handler{Bot: bot, Ses: ses, Update: update, User: user}}
 }
 
 func (h *HandlerCalc) Execute() {
@@ -75,7 +80,7 @@ func (h *HandlerCalc) Execute() {
 			h.Ses.IdxRequest++
 		case 1:
 			editText := fmt.Sprintf("Основной вид экономической деятельности: %s - %s\n",
-				h.ins.Vid, h.ins.VidDescr)
+				h.vid, h.vidDescr)
 			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, editText))
 		case 3: //need send the inline button Yes|No
 			mes.ReplyMarkup = yesNoKeyboardCalc
@@ -92,7 +97,11 @@ func (h *HandlerCalc) Execute() {
 
 func (h *HandlerCalc) ExecuteCallback() {
 	log.Printf("[%s] HandlerCallback: start calc update: %***REMOVED***v\n", h.User, h.Update)
-	callbackData := strings.Split(h.Update.CallbackQuery.Data, " ")
+	callbackData := strings.Fields(h.Update.CallbackQuery.Data)
+	if len(callbackData) != 2 || callbackData[0] != "c" || (callbackData[1] != "yes" && callbackData[1] != "no") {
+		log.Printf("[%s] HandlerCallback: invalid callback data %q", h.User, h.Update.CallbackQuery.Data)
+		return
+	}
 	editText := ""
 	log.Printf("[%s] HandlerCallback: start calc callback Data: %v\n", h.User, callbackData[1])
 	if callbackData[1] == "yes" {

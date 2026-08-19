@@ -19,7 +19,6 @@ type Insurance struct {
 	Gfot                        float64
 	EventInLast5Year            bool
 	TypeOfBuseness              ITypeOfBusiness
-	Handler                     *HandlerCalc
 }
 
 func NewInsurence(name string) services.IService {
@@ -32,10 +31,10 @@ func NewInsurence(name string) services.IService {
 }
 
 func (ins *Insurance) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.Update) {
-	ins.Handler = NewHandlerCalc(ins, bot, ses, update)
+	handler := NewHandlerCalc(ins, bot, ses, update)
 	if update.CallbackQuery != nil {
-		ins.Handler.ExecuteCallback()
+		handler.ExecuteCallback()
 	} else {
-		ins.Handler.Execute()
+		handler.Execute()
 	}
 }

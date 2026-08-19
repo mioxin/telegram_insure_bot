@@ -39,6 +39,26 @@ func Test_isAccess(t *testing.T) {
 	}
 }
 
+func TestParseConfigFileProcessesFinalLineWithoutNewline(t *testing.T) {
+	cfg, err := ParseConfigFile(strings.NewReader("allow = alice"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.IsAccess("alice") {
+		t.Fatal("expected final line without newline to be parsed")
+	}
+}
+
+func TestParseConfigFilePreservesEqualsInValue(t *testing.T) {
+	cfg, err := ParseConfigFile(strings.NewReader("secure_token = token=with=equals"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Token != "token=with=equals" {
+		t.Fatalf("token = %q, want %q", cfg.Token, "token=with=equals")
+	}
+}
+
 // func Test_st1(t *testing.T) {
 // 	st()
 // }
