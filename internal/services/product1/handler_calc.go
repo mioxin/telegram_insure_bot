@@ -52,13 +52,28 @@ func NewHandlerCalc(ins *Insurance, bot *tgapi.BotAPI, ses *sessions.Session, up
 
 func (h *HandlerCalc) Execute() {
 	// defer log.Println("[%s]session after Execute", h.Ses)
+	idx := -1
+	if h.Ses != nil {
+		idx = h.Ses.IdxRequest
+	}
+	if idx < 0 || idx >= len(requestsListCalc) {
+		log.Printf("[%s] HandlerCalc: invalid request index %d", h.User, idx)
+		if h.Ses != nil {
+			h.Ses.ResetSession()
+		}
+		return
+	}
 	err := requestsListCalc[h.Ses.IdxRequest].worker(h, h.Update.Message)
 	var m tgapi.Message
 	if err != nil {
-		if err, ok := err.(ErrorBinIinNotFound); ok {
-			log.Printf("[%s] HandlerCalc: idx=%v. %v\n", h.User, h.Ses.IdxRequest, err)
+		if binErr, ok := err.(ErrorBinIinNotFound); ok {
+			log.Printf("[%s] HandlerCalc: idx=%v. %v\n", h.User, h.Ses.IdxRequest, binErr)
 			mes := tgapi.NewMessage(h.Update.Message.Chat.ID, resources.TXT_VID)
-			m, _ = h.Bot.Send(mes)
+			m, err = h.Bot.Send(mes)
+			if err != nil {
+				log.Printf("[%s] HandlerCalc: send retry prompt failed: %v", h.User, err)
+				return
+			}
 			h.Ses.IdxRequest++
 			h.Ses.LastMessageID = m.MessageID
 			//h.Sessions.UpdateSession(h.Update.Message.Chat.ID, ses)
@@ -66,9 +81,13 @@ func (h *HandlerCalc) Execute() {
 		}
 		log.Printf("[%s] error HandlerCalc: Idx=%v. %v\n", h.User, h.Ses.IdxRequest, err)
 		if h.Ses.LastRequestIsError {
-			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, resources.WRONG_AGAIN+" "+requestsListCalc[h.Ses.IdxRequest].wrong_text))
+			m, err = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, resources.WRONG_AGAIN+" "+requestsListCalc[h.Ses.IdxRequest].wrong_text))
 		} else {
-			m, _ = h.Bot.Send(tgapi.NewMessage(h.Update.Message.Chat.ID, requestsListCalc[h.Ses.IdxRequest].wrong_text))
+			m, err = h.Bot.Send(tgapi.NewMessage(h.Update.Message.Chat.ID, requestsListCalc[h.Ses.IdxRequest].wrong_text))
+		}
+		if err != nil {
+			log.Printf("[%s] HandlerCalc: send validation error failed: %v", h.User, err)
+			return
 		}
 		h.Ses.LastRequestIsError = true
 	} else {
@@ -81,12 +100,20 @@ func (h *HandlerCalc) Execute() {
 		case 1:
 			editText := fmt.Sprintf("Основной вид экономической деятельности: %s - %s\n",
 				h.vid, h.vidDescr)
-			m, _ = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, editText))
+			m, err = h.Bot.Send(tgapi.NewEditMessageText(h.Update.Message.Chat.ID, h.Ses.LastMessageID, editText))
+			if err != nil {
+				log.Printf("[%s] HandlerCalc: edit business type failed: %v", h.User, err)
+				return
+			}
 		case 3: //need send the inline button Yes|No
 			mes.ReplyMarkup = yesNoKeyboardCalc
 		default:
 		}
-		m, _ = h.Bot.Send(mes)
+		m, err = h.Bot.Send(mes)
+		if err != nil {
+			log.Printf("[%s] HandlerCalc: send prompt failed: %v", h.User, err)
+			return
+		}
 		if h.Ses.IdxRequest < len(requestsListCalc)-1 {
 			h.Ses.IdxRequest++
 		}
@@ -111,7 +138,9 @@ func (h *HandlerCalc) ExecuteCallback() {
 	}
 	mes := tgapi.NewEditMessageText(h.Update.CallbackQuery.Message.Chat.ID, h.Update.CallbackQuery.Message.MessageID, editText)
 	mes.ParseMode = "Markdown"
-	h.Bot.Send(mes)
+	if _, err := h.Bot.Send(mes); err != nil {
+		log.Printf("[%s] HandlerCallback: edit callback failed: %v", h.User, err)
+	}
 	//h.Get_yes_no(callbackData[1])
 
 	if txt, err := h.Get_yes_no(callbackData[1]); err != nil {
@@ -122,7 +151,10 @@ func (h *HandlerCalc) ExecuteCallback() {
 	}
 	mes1 := tgapi.NewMessage(h.Update.CallbackQuery.Message.Chat.ID, editText)
 	mes1.ParseMode = "Markdown"
-	h.Bot.Send(mes1)
+	if _, err := h.Bot.Send(mes1); err != nil {
+		log.Printf("[%s] HandlerCallback: send result failed: %v", h.User, err)
+		return
+	}
 
 	h.Ses.ResetSession()
 

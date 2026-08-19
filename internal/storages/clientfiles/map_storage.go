@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -35,14 +36,20 @@ func NewMapStorage() *MapStorage {
 func (mf *MapStorage) Close() {
 	mf.mtx.Lock()
 	defer mf.mtx.Unlock()
-	// save map to files_id.json
-	fl, err := os.OpenFile(resources.FILES_ID, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	tmp, err := os.CreateTemp(filepath.Dir(resources.FILES_ID), ".files_id-*.tmp")
 	if err != nil {
-		log.Printf("map Storage Close: error while open files_id.json. %v\n", err)
+		log.Printf("map Storage Close: error while create temporary index: %v\n", err)
+		return
 	}
-	defer fl.Close()
-	wr := bufio.NewWriter(fl)
-	defer wr.Flush()
+	tmpName := tmp.Name()
+	removeTemp := true
+	defer func() {
+		if removeTemp {
+			_ = os.Remove(tmpName)
+		}
+	}()
+
+	wr := bufio.NewWriter(tmp)
 
 	jenc := json.NewEncoder(wr)
 
@@ -51,9 +58,25 @@ func (mf *MapStorage) Close() {
 			err := jenc.Encode(file)
 			if err != nil {
 				log.Printf("map Storage Close: error while save map to files_id.json. %v\n%***REMOVED***v", err, file)
+				_ = tmp.Close()
+				return
 			}
 		}
 	}
+	if err := wr.Flush(); err != nil {
+		_ = tmp.Close()
+		log.Printf("map Storage Close: error while flush index: %v\n", err)
+		return
+	}
+	if err := tmp.Close(); err != nil {
+		log.Printf("map Storage Close: error while close temporary index: %v\n", err)
+		return
+	}
+	if err := os.Rename(tmpName, resources.FILES_ID); err != nil {
+		log.Printf("map Storage Close: error while replace index: %v\n", err)
+		return
+	}
+	removeTemp = false
 	log.Printf("End Close MapStorage.\n")
 }
 
@@ -127,7 +150,7 @@ func loadMap(filesIdJson string) (map[string]map[string]*storages.FileInfo, int,
 	//var finfo *storages.FileInfo
 	m := make(map[string]map[string]*storages.FileInfo)
 	maxid := 0
-	fl, err := os.OpenFile(filesIdJson, os.O_RDWR|os.O_CREATE, 0755)
+	fl, err := os.OpenFile(filesIdJson, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, maxid, err
 	}

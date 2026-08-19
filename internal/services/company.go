@@ -42,11 +42,17 @@ func NewCompany(sbin string) (*Company, error) {
 	if err := hh.Err(); err != nil {
 		return nil, err
 	}
+	if !hh.OK() {
+		return nil, fmt.Errorf("company lookup returned HTTP status %s", hh.Status)
+	}
 	hh.JSON(&comp)
 	if err := hh.Err(); err != nil || !comp.Success {
 		e := fmt.Errorf("error success=%v, error=%v", comp.Success, err)
 		log.Println("error Company: ", e)
 		return nil, e
+	}
+	if comp.Obj == nil {
+		return nil, fmt.Errorf("company lookup returned no company data")
 	}
 	return comp.Obj, nil
 }

@@ -1,0 +1,11 @@
+*.local.cfg
+*.secret.cfg
+.env
+.env.*
+!.env.example
+*.log.*
+*.cfg
+*.log
+*.7z
+*.zip
+ARCHITECTURE_REVIEW_PLAN.md

@@ -5,6 +5,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -45,11 +46,12 @@ type ISessions interface {
 	Close()
 }
 type Commander struct {
-	bot      *tgapi.BotAPI
-	Config   *config.Config
-	Products map[string]services.IService
-	Sessions ISessions
-	Files    IFilesStorage
+	bot         *tgapi.BotAPI
+	Config      *config.Config
+	Products    map[string]services.IService
+	Sessions    ISessions
+	Files       IFilesStorage
+	updateLocks sync.Map
 	// newConf  chan any
 }
 
@@ -63,7 +65,7 @@ func NewCommander(bot *tgapi.BotAPI, conf *config.Config) *Commander {
 
 	s := sessions.NewMemSessions()
 	// done := make(chan struct{})
-	return &Commander{bot, conf, prods, s, files}
+	return &Commander{bot: bot, Config: conf, Products: prods, Sessions: s, Files: files}
 }
 
 func (cmder *Commander) Start() {
@@ -101,16 +103,28 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 	var h IHandler
 	var ses *sessions.Session
 	var chatID int64
-	log.Printf("Sessions in HandlerMain: %v", cmder.Sessions)
-
-	switch {
-	case update.CallbackQuery != nil:
+	if update.CallbackQuery != nil {
 		if update.CallbackQuery.Message == nil || update.CallbackQuery.Message.Chat == nil {
 			log.Printf("error HandlerMain: callback without message: %***REMOVED***v", update.CallbackQuery)
 			return nil
 		}
-		log.Printf("CallbackQuery in HandlerMain: %***REMOVED***v", update.CallbackQuery)
 		chatID = update.CallbackQuery.Message.Chat.ID
+	} else if update.Message != nil && update.Message.Chat != nil {
+		chatID = update.Message.Chat.ID
+	} else {
+		log.Printf("error HandlerMain: update has no supported chat: %***REMOVED***v", update)
+		return nil
+	}
+	lockValue, _ := cmder.updateLocks.LoadOrStore(chatID, &sync.Mutex{})
+	chatLock := lockValue.(*sync.Mutex)
+	chatLock.Lock()
+	defer chatLock.Unlock()
+
+	log.Printf("Sessions in HandlerMain: %v", cmder.Sessions)
+
+	switch {
+	case update.CallbackQuery != nil:
+		log.Printf("CallbackQuery in HandlerMain: %***REMOVED***v", update.CallbackQuery)
 		ses, _ = cmder.Sessions.GetSession(chatID)
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 
@@ -120,13 +134,11 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 
 		cmder.setAvailableCommands(ses, update.Message)
 
-		chatID = update.Message.Chat.ID
 		cmder.Sessions.AddSession(chatID, ses)
 		h = handlers.NewHandlerCommand(cmder.bot, cmder.Files, ses, update)
 
 	case update.Message != nil:
 		log.Printf("Message in HandlerMain: %***REMOVED***v", update.Message)
-		chatID = update.Message.Chat.ID
 		ses, _ = cmder.Sessions.GetSession(chatID)
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 

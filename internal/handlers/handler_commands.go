@@ -29,8 +29,11 @@ type RegisteredCommand struct {
 var registered_commands = map[string]RegisteredCommand{}
 
 func NewHandlerCommand(bot *tgapi.BotAPI, files_id IFilesID, ses *sessions.Session, update tgapi.Update) *HandlerCommands {
-	user := update.Message.Chat.UserName
-	if user == "" {
+	user := ""
+	if update.Message != nil && update.Message.Chat != nil {
+		user = update.Message.Chat.UserName
+	}
+	if user == "" && update.CallbackQuery != nil && update.CallbackQuery.Message != nil && update.CallbackQuery.Message.Chat != nil {
 		user = update.CallbackQuery.Message.Chat.UserName
 	}
 
@@ -38,6 +41,10 @@ func NewHandlerCommand(bot *tgapi.BotAPI, files_id IFilesID, ses *sessions.Sessi
 }
 
 func (h *HandlerCommands) Execute() {
+	if h.Update.Message == nil || h.Update.Message.Chat == nil || h.Ses == nil {
+		log.Printf("[%s] HandlerCommand: incomplete update or session", h.User)
+		return
+	}
 	if command, ok := registered_commands[h.Update.Message.Command()]; ok {
 		if _, ok := h.Ses.AccessCommand["adm"]; ok {
 			h.Ses.ActionName, h.Ses.LastMessageID = command.Worker(h, h.Update.Message)
@@ -55,7 +62,9 @@ func (h *HandlerCommands) Execute() {
 		}
 
 		msg := tgapi.NewMessage(h.Update.Message.Chat.ID, resources.WRONG_ACCESS)
-		h.Bot.Send(msg)
+		if _, err := h.Bot.Send(msg); err != nil {
+			log.Printf("[%s] HandlerCommand: access denial message failed: %v", h.User, err)
+		}
 		log.Printf("[%s] HandlerCommand: deny acces on /%s\n", h.User, h.Update.Message.Command())
 	}
 }

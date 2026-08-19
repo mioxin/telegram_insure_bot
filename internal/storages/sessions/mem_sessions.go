@@ -27,9 +27,8 @@ func (mses *MemSessions) GetSession(id int64) (*Session, error) {
 }
 
 func (mses *MemSessions) UpdateSession(id int64, ses *Session) error {
-	var err error
-	mses.mtx.RLock()
-	defer mses.mtx.RUnlock()
+	mses.mtx.Lock()
+	defer mses.mtx.Unlock()
 	if _, ok := mses.sessions[id]; !ok {
 		return fmt.Errorf("error UpdateSession: session id=%v not found. created new session", id)
 	}
@@ -37,13 +36,13 @@ func (mses *MemSessions) UpdateSession(id int64, ses *Session) error {
 		return fmt.Errorf("error in updateSession: session id=%v is <nil>", id)
 	}
 	mses.sessions[id] = *ses
-	return err
+	return nil
 
 }
 
 func (mses *MemSessions) AddSession(id int64, ses *Session) {
-	mses.mtx.Lock()
-	defer mses.mtx.Unlock()
+	mses.mtx.RLock()
+	defer mses.mtx.RUnlock()
 	mses.sessions[id] = *ses
 }
 

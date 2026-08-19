@@ -11,7 +11,11 @@ func (h *HandlerCommands) send(input_message *tgapi.Message) (string, int) {
 	log.Printf("send: [%s] %s", input_message.From.UserName, input_message.Text)
 
 	msg := tgapi.NewMessage(input_message.Chat.ID, resources.SEND)
-	m, _ := h.Bot.Send(msg)
+	m, err := h.Bot.Send(msg)
+	if err != nil {
+		log.Printf("send: send message failed: %v", err)
+		return "", 0
+	}
 	return "send", m.MessageID
 }
 

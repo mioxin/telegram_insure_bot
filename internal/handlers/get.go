@@ -19,7 +19,11 @@ func (h *HandlerCommands) get(input_message *tgapi.Message) (string, int) {
 	}
 	msg.ReplyMarkup = tgapi.NewInlineKeyboardMarkup(buttons...)
 
-	m, _ := h.Bot.Send(msg)
+	m, err := h.Bot.Send(msg)
+	if err != nil {
+		log.Printf("get: send message failed: %v", err)
+		return "", 0
+	}
 	return "get", m.MessageID
 }
 

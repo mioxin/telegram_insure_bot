@@ -1,15 +1,10 @@
 package config
 
 import (
-	"bufio"
-	"fmt"
-	"io"
 	"log"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/mrmioxin/gak_telegram_bot/resources"
 )
 
 type Config struct {
@@ -25,12 +20,7 @@ type Config struct {
 }
 
 func NewConfig(configName string) (*Config, error) {
-	configFile, err := os.ReadFile(configName)
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := ParseConfigFile(strings.NewReader(string(configFile)))
+	values, err := loadConfig(configName)
 	if err != nil {
 		return nil, err
 	}
@@ -38,13 +28,10 @@ func NewConfig(configName string) (*Config, error) {
 	if flInfo, err := os.Stat(configName); err != nil {
 		return nil, err
 	} else {
+		config := newFromKong(values, configName)
 		config.ModTime = flInfo.ModTime()
+		return config, nil
 	}
-
-	config.ConfFile = configName
-	resources.COMPANY = config.Company
-
-	return &config, err
 }
 func str_map(s string) map[string]struct{} {
 	m := make(map[string]struct{})
@@ -57,85 +44,14 @@ func str_map(s string) map[string]struct{} {
 	return m
 }
 
-func ParseConfigFile(config_file io.Reader) (Config, error) {
-	var token, company, logFile, acc_word string
-	deny := make(map[string]struct{})
-	allow := make(map[string]struct{})
-	adm := make(map[string]struct{})
-	config := Config{}
-
-	in := bufio.NewReader(config_file)
-	for {
-		str, err := in.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				return config, err
-			}
-		}
-		line := strings.TrimSpace(str)
-		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "***REMOVED***") {
-			if err == io.EOF {
-				break
-			}
-			continue
-		}
-		arr_str := strings.SplitN(line, "=", 2)
-		if len(arr_str) < 2 {
-			if err == io.EOF {
-				break
-			}
-			continue
-		}
-		switch strings.TrimSpace(arr_str[0]) {
-		case "secure_token":
-			token = strings.TrimSpace(arr_str[1])
-			if token == "" {
-				return config, fmt.Errorf("error ParseConfigFile: in the config file secure token expected")
-			}
-		case "company":
-			company = strings.TrimSpace(arr_str[1])
-		case "log_file":
-			logFile = strings.TrimSpace(arr_str[1])
-		case "deny":
-			deny = str_map(strings.ToLower(arr_str[1]))
-		case "allow":
-			allow = str_map(strings.ToLower(arr_str[1]))
-		case "adm_group":
-			adm = str_map(strings.ToLower(arr_str[1]))
-		case "acc_word":
-			acc_word = strings.TrimSpace(arr_str[1])
-
-		default:
-			log.Println("ParseConfigFile: unrecognized param in the line: ", str)
-		}
-		if err == io.EOF {
-			break
-		}
-	}
-	if logFile == "" {
-		logFile = resources.DEFAULT_LOG_FILE
-	}
-	if company == "" {
-		company = resources.COMPANY
-	}
-
-	return Config{Token: token, Company: company, LogFile: logFile, Deny: deny, Allow: allow, Admins: adm, AccWord: acc_word}, nil
-}
-
 func (conf *Config) Update() {
-	configFile, err := os.ReadFile(conf.ConfFile)
+	values, err := loadConfig(conf.ConfFile)
 	if err != nil {
 		log.Printf("error in Update config: %v", err)
 		return
 	}
-	c, err := ParseConfigFile(strings.NewReader(string(configFile)))
-	if err != nil {
-		log.Printf("error in Update config: %v", err)
-		return
-	}
-	c.ConfFile = conf.ConfFile
-	*conf = c
-	resources.COMPANY = conf.Company
+	loaded := newFromKong(values, conf.ConfFile)
+	*conf = *loaded
 
 	if flInfo, err := os.Stat(conf.ConfFile); err != nil {
 		log.Printf("error in Update config: %***REMOVED***v\n%***REMOVED***v\n", err, conf)

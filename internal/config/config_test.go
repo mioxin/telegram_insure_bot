@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -27,45 +28,123 @@ var tests = []test{
 
 func Test_isAccess(t *testing.T) {
 	for _, tst := range tests {
-		if cfg, err := ParseConfigFile(strings.NewReader(tst.conf)); err != nil {
-			t.Error(err)
-		} else {
-			t.Run(tst.conf, func(t *testing.T) {
-				if res := cfg.IsAccess(tst.user); res != tst.want {
-					t.Errorf("on user \"%s\" get %v want %v", tst.user, res, tst.want)
-				}
-			})
+		cfg := newFromKong(rawConfig{Allow: parseSetting(tst.conf, "allow"), Deny: parseSetting(tst.conf, "deny")}, "")
+		t.Run(tst.conf, func(t *testing.T) {
+			if res := cfg.IsAccess(tst.user); res != tst.want {
+				t.Errorf("on user \"%s\" get %v want %v", tst.user, res, tst.want)
+			}
+		})
+	}
+}
+
+func parseSetting(value, key string) string {
+	for _, line := range strings.Split(value, "\n") {
+		parts := strings.SplitN(strings.TrimSpace(line), "=", 2)
+		if len(parts) == 2 && strings.TrimSpace(parts[0]) == key {
+			return strings.TrimSpace(parts[1])
 		}
 	}
+	return ""
 }
 
-func TestParseConfigFileProcessesFinalLineWithoutNewline(t *testing.T) {
-	cfg, err := ParseConfigFile(strings.NewReader("allow = alice"))
+func TestLoadWithKongReadsJSONAndEnvironment(t *testing.T) {
+	configFile := t.TempDir() + "/bot.cfg"
+	if err := os.WriteFile(configFile, []byte(`{"company":"Configured Company","allow":"all"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TELEGRAM_BOT_TOKEN", "test-token")
+
+	values, err := loadConfig(configFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cfg.IsAccess("alice") {
-		t.Fatal("expected final line without newline to be parsed")
+	if values.Company != "Configured Company" || values.Token != "test-token" {
+		t.Fatalf("values = %***REMOVED***v, want configured company and environment token", values)
 	}
 }
 
-func TestParseConfigFilePreservesEqualsInValue(t *testing.T) {
-	cfg, err := ParseConfigFile(strings.NewReader("secure_token = token=with=equals"))
+func TestLoadWithKongReadsDotEnvFile(t *testing.T) {
+	dir := t.TempDir()
+	configFile := dir + "/bot.cfg"
+	envFile := dir + "/.env"
+	if err := os.WriteFile(configFile, []byte(`{"company":"Configured Company"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(envFile, []byte("TELEGRAM_BOT_TOKEN=dotenv-token\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	values, err := loadWithKong(configFile, envFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Token != "token=with=equals" {
-		t.Fatalf("token = %q, want %q", cfg.Token, "token=with=equals")
+	if values.Token != "dotenv-token" {
+		t.Fatalf("token = %q, want %q", values.Token, "dotenv-token")
 	}
 }
 
-func TestParseConfigFileReadsCompany(t *testing.T) {
-	cfg, err := ParseConfigFile(strings.NewReader("company = Test Company"))
+func TestKongConfigLoaderAllowsComments(t *testing.T) {
+	configFile := t.TempDir() + "/bot.cfg"
+	content := "// comment\n{\n  // company name\n  \"company\": \"Test Company\"\n}"
+	if err := os.WriteFile(configFile, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	values, err := loadConfig(configFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Company != "Test Company" {
-		t.Fatalf("company = %q, want %q", cfg.Company, "Test Company")
+	if values.Company != "Test Company" {
+		t.Fatalf("company = %q, want %q", values.Company, "Test Company")
+	}
+}
+
+func TestConfigUpdateKeepsLastGoodConfigOnInvalidFile(t *testing.T) {
+	configFile := t.TempDir() + "/bot.cfg"
+	if err := os.WriteFile(configFile, []byte(`{"company":"Working Company","allow":"all"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	conf, err := NewConfig(configFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configFile, []byte(`{"company":`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	conf.Update()
+
+	if conf.Company != "Working Company" {
+		t.Fatalf("company after invalid update = %q, want %q", conf.Company, "Working Company")
+	}
+}
+
+func TestLoadAppliesCLIOverrides(t *testing.T) {
+	configFile := t.TempDir() + "/bot.cfg"
+	if err := os.WriteFile(configFile, []byte(`{"company":"Config Company"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	conf, options, err := Load([]string{"--config", configFile, "--token", "cli-token", "--verbose", "--debug"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf.Token != "cli-token" {
+		t.Fatalf("token = %q, want CLI token", conf.Token)
+	}
+	if !options.Verbose || !options.Debug {
+		t.Fatalf("options = %***REMOVED***v, want verbose and debug enabled", options)
+	}
+}
+
+func TestLoadRequiresToken(t *testing.T) {
+	configFile := t.TempDir() + "/bot.cfg"
+	if err := os.WriteFile(configFile, []byte(`{"company":"Config Company"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TELEGRAM_BOT_TOKEN", "")
+
+	if _, _, err := Load([]string{"--config", configFile}); err == nil {
+		t.Fatal("expected missing token error")
 	}
 }
 

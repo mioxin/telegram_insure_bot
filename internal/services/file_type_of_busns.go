@@ -27,14 +27,14 @@ func NewFileTypeOfBusns(file string) (fileTypeOfBusns, error) {
 				return nil, err
 			}
 		}
-		arr := strings.Split(strings.TrimSpace(ln), "-")
-		if len(arr) < 2 {
+		arr := strings.SplitN(strings.TrimSpace(ln), "-", 2)
+		if len(arr) < 2 || strings.TrimSpace(arr[0]) == "" {
 			if strings.TrimSpace(ln) != "" {
 				log.Printf("error NewFileTypeOdBusns: skip line %v", ln)
 			}
 		} else {
 			vid := strings.TrimSpace(arr[0])
-			tob[vid] = arr[1]
+			tob[vid] = strings.TrimSpace(arr[1])
 		}
 		if err == io.EOF {
 			break

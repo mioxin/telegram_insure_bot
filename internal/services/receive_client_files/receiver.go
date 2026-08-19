@@ -42,7 +42,11 @@ func (r *Recever) Execute(bot *tgapi.BotAPI, ses *sessions.Session, update tgapi
 		ses.LastRequestIsError = true
 	}
 
-	m, _ := bot.Send(msg)
+	m, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("error in Receiver Execute: send response failed: %v", err)
+		return
+	}
 	ses.LastMessageID = m.MessageID
 }
 
