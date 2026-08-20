@@ -1,6 +1,6 @@
-module github.com/mioxin/gak_telegram_bot
+module github.com/mioxin/telegram_insure_bot
 
-go 1.19
+go 1.26
 
 require github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 

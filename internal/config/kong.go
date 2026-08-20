@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/mrmioxin/gak_telegram_bot/resources"
+	"github.com/mioxin/telegram_insure_bot/resources"
 )
 
 type rawConfig struct {

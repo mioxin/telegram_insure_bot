@@ -2,7 +2,7 @@ package handlers
 
 import (
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
+	"github.com/mioxin/telegram_insure_bot/internal/storages/sessions"
 )
 
 type Handler struct {

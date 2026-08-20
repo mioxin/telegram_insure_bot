@@ -4,8 +4,8 @@ import (
 	"log"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
-	"github.com/mrmioxin/gak_telegram_bot/resources"
+	"github.com/mioxin/telegram_insure_bot/internal/storages/sessions"
+	"github.com/mioxin/telegram_insure_bot/resources"
 )
 
 type IFileStorage interface {

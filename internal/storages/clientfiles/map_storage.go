@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mrmioxin/gak_telegram_bot/internal/storages"
-	"github.com/mrmioxin/gak_telegram_bot/resources"
+	"github.com/mioxin/telegram_insure_bot/internal/storages"
+	"github.com/mioxin/telegram_insure_bot/resources"
 )
 
 type MapStorage struct {

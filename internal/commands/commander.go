@@ -9,15 +9,15 @@ import (
 	"time"
 
 	tgapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/mrmioxin/gak_telegram_bot/internal/config"
-	"github.com/mrmioxin/gak_telegram_bot/internal/handlers"
-	"github.com/mrmioxin/gak_telegram_bot/internal/services"
-	"github.com/mrmioxin/gak_telegram_bot/internal/services/product1"
-	srv_cfls "github.com/mrmioxin/gak_telegram_bot/internal/services/receive_client_files"
-	"github.com/mrmioxin/gak_telegram_bot/internal/services/uploadclientfiles"
-	"github.com/mrmioxin/gak_telegram_bot/internal/storages/clientfiles"
-	"github.com/mrmioxin/gak_telegram_bot/internal/storages/sessions"
-	"github.com/mrmioxin/gak_telegram_bot/resources"
+	"github.com/mioxin/telegram_insure_bot/internal/config"
+	"github.com/mioxin/telegram_insure_bot/internal/handlers"
+	"github.com/mioxin/telegram_insure_bot/internal/services"
+	"github.com/mioxin/telegram_insure_bot/internal/services/product1"
+	srv_cfls "github.com/mioxin/telegram_insure_bot/internal/services/receive_client_files"
+	"github.com/mioxin/telegram_insure_bot/internal/services/uploadclientfiles"
+	"github.com/mioxin/telegram_insure_bot/internal/storages/clientfiles"
+	"github.com/mioxin/telegram_insure_bot/internal/storages/sessions"
+	"github.com/mioxin/telegram_insure_bot/resources"
 )
 
 type IHandler interface {
