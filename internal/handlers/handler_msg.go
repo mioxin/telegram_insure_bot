@@ -26,7 +26,7 @@ func NewHandlerMessage(bot *tgapi.BotAPI, ses *sessions.Session, prods map[strin
 }
 
 func (h *HandlerMessage) Execute() {
-	log.Printf("[%s] HandlerMess Execute start: %***REMOVED***v", h.User, h.Ses)
+	log.Printf("[%s] HandlerMess Execute start: %#v", h.User, h.Ses)
 	if h.Update.CallbackQuery != nil && (h.Update.CallbackQuery.Message == nil || h.Update.CallbackQuery.Message.Chat == nil) {
 		log.Printf("[%s] HandlerMessage: incomplete callback", h.User)
 		return

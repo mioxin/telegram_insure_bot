@@ -59,7 +59,7 @@ func TestLoadWithKongReadsJSONAndEnvironment(t *testing.T) {
 		t.Fatal(err)
 	}
 	if values.Company != "Configured Company" || values.Token != "test-token" {
-		t.Fatalf("values = %***REMOVED***v, want configured company and environment token", values)
+		t.Fatalf("values = %#v, want configured company and environment token", values)
 	}
 }
 
@@ -132,7 +132,7 @@ func TestLoadAppliesCLIOverrides(t *testing.T) {
 		t.Fatalf("token = %q, want CLI token", conf.Token)
 	}
 	if !options.Verbose || !options.Debug {
-		t.Fatalf("options = %***REMOVED***v, want verbose and debug enabled", options)
+		t.Fatalf("options = %#v, want verbose and debug enabled", options)
 	}
 }
 

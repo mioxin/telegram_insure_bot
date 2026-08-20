@@ -54,7 +54,7 @@ func (conf *Config) Update() {
 	*conf = *loaded
 
 	if flInfo, err := os.Stat(conf.ConfFile); err != nil {
-		log.Printf("error in Update config: %***REMOVED***v\n%***REMOVED***v\n", err, conf)
+		log.Printf("error in Update config: %#v\n%#v\n", err, conf)
 	} else {
 		conf.ModTime = flInfo.ModTime()
 	}
@@ -108,7 +108,7 @@ func (conf *Config) IsAccess(user string) bool {
 
 // 			if isModify {
 // 				// c, _ := NewConfig(configFile)
-// 				// log.Printf("Config file before %v \n%***REMOVED***v", &conf, conf)
+// 				// log.Printf("Config file before %v \n%#v", &conf, conf)
 // 				log.Printf("Config file %v was modify.", configFile)
 // 				ok <- struct{}{}
 // 			}

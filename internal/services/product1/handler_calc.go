@@ -39,7 +39,7 @@ var (
 func NewHandlerCalc(ins *Insurance, bot *tgapi.BotAPI, ses *sessions.Session, update tgapi.Update) *HandlerCalc {
 	var user string
 	//user := update.Message.Chat.UserName
-	log.Printf("NewHandlerCalc: update.Message=%***REMOVED***v\nupdate.CallbackQuery=%***REMOVED***v\n", update.Message, update.CallbackQuery)
+	log.Printf("NewHandlerCalc: update.Message=%#v\nupdate.CallbackQuery=%#v\n", update.Message, update.CallbackQuery)
 	if update.Message != nil {
 		user = update.Message.Chat.UserName
 	}
@@ -123,7 +123,7 @@ func (h *HandlerCalc) Execute() {
 }
 
 func (h *HandlerCalc) ExecuteCallback() {
-	log.Printf("[%s] HandlerCallback: start calc update: %***REMOVED***v\n", h.User, h.Update)
+	log.Printf("[%s] HandlerCallback: start calc update: %#v\n", h.User, h.Update)
 	callbackData := strings.Fields(h.Update.CallbackQuery.Data)
 	if len(callbackData) != 2 || callbackData[0] != "c" || (callbackData[1] != "yes" && callbackData[1] != "no") {
 		log.Printf("[%s] HandlerCallback: invalid callback data %q", h.User, h.Update.CallbackQuery.Data)

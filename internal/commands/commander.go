@@ -105,14 +105,14 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 	var chatID int64
 	if update.CallbackQuery != nil {
 		if update.CallbackQuery.Message == nil || update.CallbackQuery.Message.Chat == nil {
-			log.Printf("error HandlerMain: callback without message: %***REMOVED***v", update.CallbackQuery)
+			log.Printf("error HandlerMain: callback without message: %#v", update.CallbackQuery)
 			return nil
 		}
 		chatID = update.CallbackQuery.Message.Chat.ID
 	} else if update.Message != nil && update.Message.Chat != nil {
 		chatID = update.Message.Chat.ID
 	} else {
-		log.Printf("error HandlerMain: update has no supported chat: %***REMOVED***v", update)
+		log.Printf("error HandlerMain: update has no supported chat: %#v", update)
 		return nil
 	}
 	lockValue, _ := cmder.updateLocks.LoadOrStore(chatID, &sync.Mutex{})
@@ -124,12 +124,12 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 
 	switch {
 	case update.CallbackQuery != nil:
-		log.Printf("CallbackQuery in HandlerMain: %***REMOVED***v", update.CallbackQuery)
+		log.Printf("CallbackQuery in HandlerMain: %#v", update.CallbackQuery)
 		ses, _ = cmder.Sessions.GetSession(chatID)
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 
 	case update.Message != nil && update.Message.IsCommand():
-		log.Printf("Command in HandlerMain: %***REMOVED***v", update.Message.Command())
+		log.Printf("Command in HandlerMain: %#v", update.Message.Command())
 		ses = sessions.NewSession(update.Message.Chat.UserName)
 
 		cmder.setAvailableCommands(ses, update.Message)
@@ -138,12 +138,12 @@ func (cmder *Commander) handl(update tgapi.Update) error {
 		h = handlers.NewHandlerCommand(cmder.bot, cmder.Files, ses, update)
 
 	case update.Message != nil:
-		log.Printf("Message in HandlerMain: %***REMOVED***v", update.Message)
+		log.Printf("Message in HandlerMain: %#v", update.Message)
 		ses, _ = cmder.Sessions.GetSession(chatID)
 		h = handlers.NewHandlerMessage(cmder.bot, ses, cmder.Products, update)
 
 	default:
-		log.Printf("error HandlerMain: update has no supported message: %***REMOVED***v", update)
+		log.Printf("error HandlerMain: update has no supported message: %#v", update)
 		return nil
 	}
 

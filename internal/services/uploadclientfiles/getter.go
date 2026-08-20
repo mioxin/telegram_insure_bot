@@ -86,7 +86,7 @@ func (g *Getter) UploadListFiles(bot *tgapi.BotAPI, user string, chatId int64) (
 
 	m, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("getter UploadListFile: buttons: %***REMOVED***v", buttons)
+		log.Printf("getter UploadListFile: buttons: %#v", buttons)
 		return 0, err
 	}
 	return m.MessageID, nil
