@@ -57,7 +57,7 @@ func (mf *MapStorage) Close() {
 		for _, file := range flMap {
 			err := jenc.Encode(file)
 			if err != nil {
-				log.Printf("map Storage Close: error while save map to files_id.json. %v\n%***REMOVED***v", err, file)
+				log.Printf("map Storage Close: error while save map to files_id.json. %v\n%v", err, file)
 				_ = tmp.Close()
 				return
 			}
@@ -87,7 +87,7 @@ func (mf *MapStorage) GetFileId(ids, user string) (string, error) {
 
 	f, ok := mf.store[user]
 	if !ok {
-		log.Printf("GetFileId: user %v\n map %***REMOVED***v.\n", user, f)
+		log.Printf("GetFileId: user %v\n map %v.\n", user, f)
 		return "", fmt.Errorf("error in GetFileId: user \"%v\" have not any files", user)
 	}
 
@@ -98,14 +98,14 @@ func (mf *MapStorage) GetFileId(ids, user string) (string, error) {
 				return fl.FileId, nil
 			}
 		}
-		e = fmt.Errorf("error in GetFileId: id \"%v\" not converted to int\n %***REMOVED***v", ids, err)
+		e = fmt.Errorf("error in GetFileId: id \"%v\" not converted to int\n %w", ids, err)
 	} else {
 		for _, fl := range f {
 			if fl.Id == id {
 				return fl.FileId, nil
 			}
 		}
-		e = fmt.Errorf("error in GetFileId: file_id \"%v\" in the map %***REMOVED***v not found", id, f)
+		e = fmt.Errorf("error in GetFileId: file_id \"%v\" in the map %v not found", id, f)
 	}
 
 	return "", e
@@ -165,7 +165,7 @@ func loadMap(filesIdJson string) (map[string]map[string]*storages.FileInfo, int,
 			break
 		}
 		if err != nil {
-			log.Printf("LoadMap: error while load map from files_id.json.\n%***REMOVED***v", err)
+			log.Printf("LoadMap: error while load map from files_id.json.\n%v", err)
 		} else {
 			if maxid < finfo.Id {
 				maxid = finfo.Id
