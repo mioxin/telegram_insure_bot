@@ -1,4 +1,4 @@
-module github.com/mrmioxin/gak_telegram_bot
+module github.com/mioxin/gak_telegram_bot
 
 go 1.19
 
